@@ -41,9 +41,11 @@ interface FilterBuilderProps {
 }
 
 interface Criteria {
+  key: string | null;
   label: string;
   dataType: string;
-  operator?: string;
+  operator: string;
+  operators: string[];
 }
 
 const operators: any = {
@@ -322,9 +324,11 @@ const App: React.FC<FilterBuilderProps> = ({
   const [criteriaTabs, setCriteriaTabs] = useState<any>(initialCriteriaTabs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCriteria, setNewCriteria] = useState<Criteria>({
+    key: null,
     label: "",
     dataType: "string",
-    operator: ""
+    operator: "",
+    operators: []
   });
 
   const [currentTab, setCurrentTab] = useState<string>("");
@@ -588,7 +592,7 @@ const App: React.FC<FilterBuilderProps> = ({
 
   const handleOpenModal = (tab: string) => {
     setCurrentTab(tab);
-    setNewCriteria({ label: "", dataType: "string" });
+    setNewCriteria({ key: null, label: "", dataType: "string" , operator:"equals", operators: []});
     setIsModalOpen(true);
   };
 
@@ -625,10 +629,11 @@ const App: React.FC<FilterBuilderProps> = ({
       return;
     }
     // console.log("acitve tab", activeTab);
-    // console.log("new criteria", newCriteria);
-
+    console.log("new criteria", newCriteria);
+    const generatedKey = newCriteria.label.trim().toLowerCase().replace(/\s+/g, '_');
     createCriteriaBlocks({
-      name: newCriteria.label,
+      key: generatedKey,
+      label: newCriteria.label,
       type: newCriteria.dataType,
       category: activeTab === "Tab1" ? "filterComponent" : "triggerFilter",
       operators: [newCriteria.operator]
@@ -680,9 +685,11 @@ const App: React.FC<FilterBuilderProps> = ({
 
       res.data.forEach((item: any) => {
         const criteriaObj = {
-          label: item.name,
+          key: item.key,
+          label: item.label,
           dataType: item.type,
-          operator: item.operators?.[0] || "equals", // ✅ preserve selected operator
+          operator: item.operators?.[0] || "equals", 
+          operators: item.operators || [],
         };
 
         if (item.category === "filterComponent") {
@@ -843,7 +850,7 @@ const App: React.FC<FilterBuilderProps> = ({
         groupId: group.groupId,
         groupOperator: groupOperatorsByTab[activeTab]?.[group.id] || "AND",
         criteria: group.criteria.map((criteria: any) => ({
-          field: criteria.label,
+          field: criteria.key,
           operator: criteria.operator,
           value: criteria.value,
         })),

@@ -127,7 +127,7 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ handleChange, campa
           }],
           audience.logicalOperator
         );
-        console.log('audience.conditions', audience.conditions);
+        // console.log('audience.conditions', audience.conditions);
 
         return (
           <React.Fragment key={audience._id?.toString()}>

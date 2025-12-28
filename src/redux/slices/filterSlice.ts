@@ -64,7 +64,7 @@ export const fetchFilters = createAsyncThunk(
     try {
       const response = await getFilters(page, search, sortBy, order, limit, isDraft);
 
-      console.log("API Response:", response);
+      // console.log("API Response:", response);
 
       if (!response || !response.filters || !response.pagination) {
         throw new Error("Invalid API response: Missing pagination data");

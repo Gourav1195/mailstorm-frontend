@@ -69,7 +69,18 @@ const ResponsiveLayout: React.FC = () => {
             </IconButton>
           </Box>
 
-          <Box component="img" src={`${process.env.PUBLIC_URL}/icons/logo.png`} alt="logo" width={'auto'} height={'35px'} />
+          <Box component="img" src={`${process.env.PUBLIC_URL}/icons/logo.png`} alt="Mailstorm" width={'auto'} height={'35px'} /> 
+          <Typography
+            sx={{
+              fontWeight: 800,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "#1A1A1A",           
+              marginLeft: "4px",
+            }}
+          >
+            Mailstorm
+          </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 2, }}>
             <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
               <Box sx={{ ml: 9, display: 'flex', flexDirection: 'column' }}>

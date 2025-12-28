@@ -115,11 +115,11 @@ export const fetchCampaigns = async (filters: any) => {
   params.page = filters.page ?? 1; // ✅ Default page
   params.limit = filters.limit ?? 10; // ✅ Default limit
 
-  console.log("Sending API Request:", params); // ✅ Debugging
+  // console.log("Sending API Request:", params); // ✅ Debugging
 
   const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/campaigns`, { params });
 
-  console.log("API Response:", response.data); // ✅ Debug response
+  // console.log("API Response:", response.data); // ✅ Debug response
 
   return response.data;
 };

@@ -146,7 +146,7 @@ const campaignSlice = createSlice({
       state.error = null;
     })
     .addCase(loadCampaigns.fulfilled, (state, action) => {
-      console.log("API Response Data:", action.payload);
+      // console.log("API Response Data:", action.payload);
       if (!action.payload || !action.payload.data) {
         console.error("Error: API did not return campaigns data");
         state.campaigns = [];

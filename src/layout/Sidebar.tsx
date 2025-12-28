@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { List, ListItem, ListItemText, ListItemIcon, Collapse, Box, Drawer, useTheme, IconButton } from "@mui/material";
+import { List, ListItem, ListItemText, ListItemIcon, Collapse, Box, Drawer, useTheme, IconButton, Typography } from "@mui/material";
 import {
   ExpandLess,
   // ExpandMore,
@@ -145,8 +145,19 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, handleDrawer
         [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
       }}
     >
-      <Box sx={{ display: 'flex', padding: "20px", marginBottom: "5px" }}>
-        <Box component='img' src={`${process.env.PUBLIC_URL}/icons/logo.png`} alt="logo" width={'auto'} height={'35px'} />
+      <Box sx={{ display: 'flex', padding: "20px", marginBottom: "5px", alignItems: 'center', }}>
+        <Box component='img' src={`${process.env.PUBLIC_URL}/icons/logo.png`} alt="Mailstorm" width={'auto'} height={'35px'} />
+        <Typography
+          sx={{
+            fontWeight: 800,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "#1A1A1A",
+            marginLeft: "4px",
+          }}
+        >
+          Mailstorm
+        </Typography>
         <Box sx={{ display: { md: 'none' } }}>
           <IconButton
             color="inherit"

@@ -429,7 +429,7 @@ const handleSortChange = (e: SelectChangeEvent<string>) => {
                   >
                     <TableCell>
                       <Button sx={{ color: "#0057D9", bgcolor: "#F2F7FF", fontSize: "12px", ml:0.8 }}>
-                        {getFakeId(campaign._id)}
+                        {campaign._id && getFakeId(campaign._id)}
                       </Button>
                       <Typography sx={{ fontWeight: "bold", fontSize: "12px", p: 0.25, ml:1.5 }}>
                         {campaign.name}
@@ -499,21 +499,22 @@ const handleSortChange = (e: SelectChangeEvent<string>) => {
                       >
 
                         <IconButton sx={{ borderRadius: '25px' }}
-                          onClick={() => handleEditClick(campaign._id)}
+                          onClick={() => campaign._id && handleEditClick(campaign._id)}
+                          disabled={!campaign._id}
                         >
                           <EditIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
                         </IconButton>
-                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => handlePauseResume(campaign._id, campaign.status)}>
+                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => campaign._id && handlePauseResume(campaign._id, campaign.status ?? '')}>
                           {campaign.status === "Paused" ? (
                             <PlayArrowIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
                           ) : (
                             <PauseIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
                           )}
                         </IconButton>
-                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => handleDuplicate(campaign._id)}>
+                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => campaign._id && handleDuplicate(campaign._id)}>
                           <ContentCopyIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
                         </IconButton>
-                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => handleDeleteClick(campaign._id)}>
+                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => campaign._id && handleDeleteClick(campaign._id)}>
                           <DeleteIcon sx={{ fontSize: '30px', color: 'white', bgcolor: '#F83738', p: { xs: 0.7 }, borderRadius: '4.5px' }} />
                         </IconButton>
                       </Box>
