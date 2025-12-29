@@ -8,32 +8,20 @@ const apiClient = axios.create({
 });
 
 // Global Error Handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const notify = useNotification();
-    notify.notifyError(error.response?.data?.message || "An unexpected error occurred.");
-    return Promise.reject(error);
-  }
-);
+// apiClient.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     // const notify = useNotification();
+//     // notify.notifyError(error.response?.data?.message || "An unexpected error occurred.");
+//     return Promise.reject(error);
+//   }
+// );
 
 
 export const fetchDashboardStats = async () => {
   const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/dashboard`);
   return response.data;
 };
-
-// Global Error Handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const notify = useNotification();
-    notify.notifyError(error.response?.data?.message || "An unexpected error occurred.");
-    return Promise.reject(error);
-  }
-);
-
-
 
 // Get all filters with pagination, search, and sorting
 export const getFilters = async (page = 1, search = "", sortBy = "", order = "asc", limit = 10, isDraft?: boolean) => {
@@ -253,5 +241,6 @@ export const getTemplateById = (id: string) => apiClient.get(`/templates/${id}`)
 export const updateTemplate = (id: string, templateData: any) => apiClient.put(`/templates/${id}`, templateData);
 export const deleteTemplate = (id: string) => apiClient.delete(`/templates/${id}`);
 
+export const getAudienceCount = () => apiClient.get("/audience/count");
 
 export default apiClient;

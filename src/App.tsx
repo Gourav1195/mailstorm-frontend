@@ -65,7 +65,7 @@ const AppContent = () => {
 const App = () => {
   return (
     <DndProvider backend={HTML5Backend}>
-      <Router basename='/marketing-campaigns-portal'>
+      <Router basename='/'>
         <AppContent />
       </Router>
     </DndProvider>

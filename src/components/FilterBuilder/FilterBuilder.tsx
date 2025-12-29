@@ -27,11 +27,12 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import { CloseRounded, DragIndicator } from "@mui/icons-material";
 import AddIcon from "@mui/icons-material/Add";
-import { createCriteriaBlocks, getCriteriaBlocks, createOrUpdateFilter } from "../../api/apiClient";
+import { createCriteriaBlocks, getCriteriaBlocks, createOrUpdateFilter, getAudienceCount } from "../../api/apiClient";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../redux/store";
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
+import { set } from "lodash";
 
 interface FilterBuilderProps {
   mode?: "edit" | "create";
@@ -320,7 +321,7 @@ const App: React.FC<FilterBuilderProps> = ({
   const [saveDescription, setSaveDescription] = useState("");
   const [saveTags, setSaveTags] = useState("");
   const [isSaveFilterModalOpen, setIsSaveFilterModalOpen] = useState(false);
-  const [estimatedAudience, setEstimatedAudience] = useState<number>(5000); // Static value
+  const [estimatedAudience, setEstimatedAudience] = useState<number>(0); 
   const [criteriaTabs, setCriteriaTabs] = useState<any>(initialCriteriaTabs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCriteria, setNewCriteria] = useState<Criteria>({
@@ -360,6 +361,9 @@ const App: React.FC<FilterBuilderProps> = ({
     color: '',
     handleClose: () => { },
   });
+  useEffect(() => {
+    getAudienceCount().then(res => setEstimatedAudience(res.data.count));
+  }, []);
 
   useEffect(() => {
     if (mode === "edit" && initialData) {
@@ -682,7 +686,7 @@ const App: React.FC<FilterBuilderProps> = ({
     getCriteriaBlocks().then((res) => {
       const tab1Data: any = [];
       const tab2Data: any = [];
-
+      console.log("res", res);
       res.data.forEach((item: any) => {
         const criteriaObj = {
           key: item.key,
