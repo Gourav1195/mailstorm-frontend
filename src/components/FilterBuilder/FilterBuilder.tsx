@@ -41,12 +41,36 @@ interface FilterBuilderProps {
   onDiscard?: () => void;
 }
 
+interface GroupCriteria {
+  key: string;
+  label: string;
+  dataType: string;
+  operator: string;
+  value: string;
+}
+
 interface Criteria {
   key: string | null;
   label: string;
   dataType: string;
   operator: string;
   operators: string[];
+}
+
+interface CriteriaBlockUI {
+  key: string;
+  label: string;
+  dataType: string;
+  operators: string[];
+}
+
+interface AppliedCriteria {
+  key: string;
+  label: string;       // UI only
+  dataType: string;
+  operator: string;
+  value: string;
+  availableOperators: string[];
 }
 
 const operators: any = {
@@ -116,7 +140,7 @@ const operatorLabels: { [key: string]: string } = {
 
 
 
-const initialCriteriaTabs: Record<string, Criteria[]> = {
+const initialCriteriaTabs: Record<string, CriteriaBlockUI[]> = {
   Tab1: [],
   Tab2: [],
 };
@@ -124,7 +148,7 @@ const initialCriteriaTabs: Record<string, Criteria[]> = {
 const ItemType = "CRITERIA";
 
 interface DraggableItemProps {
-  criteria: Criteria;
+  criteria: CriteriaBlockUI;
 }
 
 const DraggableItem: React.FC<DraggableItemProps> = ({ criteria }) => {
@@ -157,23 +181,24 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ criteria }) => {
   );
 };
 
-interface GroupCriteria extends Criteria {
-  operator: string;
-  value: string;
-}
+// interface GroupCriteria extends Criteria {
+//   operator: string;
+//   value: string;
+// }
 
 interface DropGroupProps {
   groupId: number;
-  items: GroupCriteria[];
-  onDrop: (criteria: Criteria, groupId: number) => void;
+  items: AppliedCriteria[];
+  onDrop: (criteria: CriteriaBlockUI, groupId: number) => void;
   onRemove: (criteriaLabel: string, groupId: number) => void;
   onUpdate: (
     criteriaLabel: string,
     groupId: number,
-    field: keyof GroupCriteria,
+    field: keyof AppliedCriteria,
     value: string
   ) => void;
 }
+
 
 const DropGroup: React.FC<DropGroupProps> = ({
   groupId,
@@ -184,10 +209,11 @@ const DropGroup: React.FC<DropGroupProps> = ({
 }) => {
   const [, drop] = useDrop({
     accept: ItemType,
-    drop: (item: { criteria: Criteria }) => {
+    drop: (item: { criteria: CriteriaBlockUI }) => {
       onDrop(item.criteria, groupId);
     },
   });
+  const safeItems = Array.isArray(items) ? items : [];
 
   return (
     <Box
@@ -198,12 +224,12 @@ const DropGroup: React.FC<DropGroupProps> = ({
         mt: 0,
         display: "flex",
         flexDirection: "column",
-        justifyContent: items.length === 0 ? "center" : "flex-start",
-        alignItems: items.length === 0 ? "center" : "flex-start",
+        justifyContent: safeItems.length === 0 ? "center" : "flex-start",
+        alignItems: safeItems.length === 0 ? "center" : "flex-start",
         textAlign: "center",
       }}
     >
-      {items.length === 0 ? (
+      {safeItems.length === 0 ? (
         <Box>
           <Typography variant="body1" sx={{ fontWeight: "bold" }}>
             Drag and drop fields
@@ -213,7 +239,7 @@ const DropGroup: React.FC<DropGroupProps> = ({
           </Typography>
         </Box>
       ) : (
-        items.map((item) => (
+        safeItems.map((item) => (
           <Box
             key={item.label}
             sx={{
@@ -222,9 +248,9 @@ const DropGroup: React.FC<DropGroupProps> = ({
               gap: 1,
               p: 1,
               border: "1px solid #ccc",
-              mt: 1,              
-              bgcolor:'#ffffff',
-              color:'#6D6976',
+              mt: 1,
+              bgcolor: '#ffffff',
+              color: '#6D6976',
             }}
           >
             <Typography>{item.label}</Typography>
@@ -236,10 +262,10 @@ const DropGroup: React.FC<DropGroupProps> = ({
               renderValue={(selected) =>
                 selected ? operatorLabels[selected] || selected : <em>Select</em>
               }
-              sx={{color:'#6D6976',}}
+              sx={{ color: '#6D6976', }}
             >
-              {(operators[item.dataType] || []).map((op: string) => (
-                <MenuItem key={op} value={op} sx={{color:'#6D6976',}}>
+              {item.availableOperators.map((op: string) => (
+                <MenuItem key={op} value={op} sx={{ color: '#6D6976', }}>
                   {operatorLabels[op] || op}
                 </MenuItem>
               ))}
@@ -299,6 +325,7 @@ const DropGroup: React.FC<DropGroupProps> = ({
     </Box>
   );
 };
+  
 
 const App: React.FC<FilterBuilderProps> = ({
   mode = "create",
@@ -322,7 +349,7 @@ const App: React.FC<FilterBuilderProps> = ({
   const [saveTags, setSaveTags] = useState("");
   const [isSaveFilterModalOpen, setIsSaveFilterModalOpen] = useState(false);
   const [estimatedAudience, setEstimatedAudience] = useState<number>(0); 
-  const [criteriaTabs, setCriteriaTabs] = useState<any>(initialCriteriaTabs);
+  const [criteriaTabs, setCriteriaTabs] = useState<Record<string, CriteriaBlockUI[]>>(initialCriteriaTabs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCriteria, setNewCriteria] = useState<Criteria>({
     key: null,
@@ -374,18 +401,24 @@ const App: React.FC<FilterBuilderProps> = ({
       const groups = initialData.groups || [];
 
       const formattedGroups = groups.map((group: any) => ({
-        id: group.groupId, // ✅ use groupId directly
-        criteria: group.conditions.map((c: any) => {
-          const found = [...(criteriaTabs.Tab1 || []), ...(criteriaTabs.Tab2 || [])].find((item: any) => item.label === c.field);
-          return {
-            label: c.field,
-            operator: c.operator,
-            value: c.value,
-            dataType: found?.dataType || "string",
-          };
-        }),
+        id: group.groupId,
+        criteria: Array.isArray(group.conditions)
+          ? group.conditions.map((c: any) => {
+              const found = [...criteriaTabs.Tab1, ...criteriaTabs.Tab2]
+                .find((item) => item.label === c.field);
 
+              return {
+                key: c.field,
+                label: c.field,
+                operator: c.operator,
+                value: c.value,
+                dataType: found?.dataType || "string",
+                availableOperators: found?.operators || [],
+              };
+            })
+          : [], // 👈 critical
       }));
+
 
       const groupOps: any = {};
       const logicOps: any = {};
@@ -510,11 +543,11 @@ const App: React.FC<FilterBuilderProps> = ({
   };
 
 
-  const handleDrop = (criteria: Criteria, groupId: number) => {
+  const handleDrop = (criteria: CriteriaBlockUI, groupId: number) => {
     setGroupsByTab((prev) => {
       const updatedGroups = prev[activeTab].map((group) => {
         if (group.id === groupId) {
-          if (group.criteria.some((c: Criteria) => c.label === criteria.label)) {
+          if (group.criteria.some((c: CriteriaBlockUI) => c.label === criteria.label)) {
             mainError.push(`Cannot drag "${criteria.label}" as it already exists in this group.`);
             setValidationError(prev => ({
               ...prev,
@@ -529,8 +562,11 @@ const App: React.FC<FilterBuilderProps> = ({
             criteria: [
               ...group.criteria,
               {
-                ...criteria,
-                operator: criteria.operator || "equals", // ✅ respect selected operator
+                key: criteria.key!,
+                label: criteria.label,
+                dataType: criteria.dataType,
+                operator: criteria.operators[0], 
+                availableOperators: criteria.operators,
                 value: "",
               },
             ],
@@ -546,7 +582,7 @@ const App: React.FC<FilterBuilderProps> = ({
   const handleUpdateItem = (
     criteriaLabel: string,
     groupId: number,
-    field: keyof GroupCriteria,
+    field: keyof AppliedCriteria,
     value: string
   ) => {
     setGroupsByTab((prev) => {
@@ -554,7 +590,7 @@ const App: React.FC<FilterBuilderProps> = ({
         if (group.id === groupId) {
           return {
             ...group,
-            criteria: group.criteria.map((item: GroupCriteria) => {
+            criteria: group.criteria.map((item: AppliedCriteria) => {
               if (item.label === criteriaLabel) {
                 return { ...item, [field]: value };
               }
@@ -687,12 +723,11 @@ const App: React.FC<FilterBuilderProps> = ({
       const tab1Data: any = [];
       const tab2Data: any = [];
       console.log("res", res);
-      res.data.forEach((item: any) => {
+      res.data.data.forEach((item: any) => {
         const criteriaObj = {
           key: item.key,
           label: item.label,
           dataType: item.type,
-          operator: item.operators?.[0] || "equals", 
           operators: item.operators || [],
         };
 
@@ -934,7 +969,7 @@ const App: React.FC<FilterBuilderProps> = ({
         groupId: group.groupId,
         groupOperator: groupOperatorsByTab[activeTab]?.[group.id] || "AND",
         criteria: group.criteria.map((criteria: any) => ({
-          field: criteria.label,
+          field: criteria.key,
           operator: criteria.operator,
           value: criteria.value,
         })),

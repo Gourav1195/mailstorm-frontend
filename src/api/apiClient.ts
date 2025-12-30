@@ -6,6 +6,7 @@ const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
+console.log("API BASE:", apiClient.defaults.baseURL);
 
 // Global Error Handling
 // apiClient.interceptors.response.use(
@@ -85,9 +86,9 @@ export const updateFilter = async (filterId: string, updatedData: any) => {
   }
 };
 // createOrUpdateFilter
-export const createOrUpdateFilter = (filterData: any) => {
-  return axios.post(`${process.env.REACT_APP_API_BASE_URL}/filters`, filterData);
-};
+// export const createOrUpdateFilter = (filterData: any) => {
+//   return axios.post(`${process.env.REACT_APP_API_BASE_URL}/filters`, filterData);
+// };
 
 //Campaign Listing & Filter
 export const fetchCampaigns = async (filters: any) => {
@@ -138,17 +139,13 @@ export const deleteCampaignApi = async (campaignId: string) => {
   return campaignId;
 };
 
+export const createOrUpdateFilter = (data: any) =>
+  apiClient.post("/filters", data);
+
 //criteria blocks
-export const createCriteriaBlocks = async (data: any) => {
-  const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/criteria-blocks`, data);
-  return response.data;
-}
-
-export const getCriteriaBlocks = async () => {
-  const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/criteria-blocks`);
-  return response.data;
-}
-
+export const getCriteriaBlocks = () => apiClient.get("/criteria-blocks");
+export const createCriteriaBlocks = (data: any) =>
+  apiClient.post("/criteria-blocks", data);
 
 // ✅ Update Campaign
 export const updateCampaignApi = async (campaignId: string, updatedData: any) => {

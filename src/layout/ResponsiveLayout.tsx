@@ -31,8 +31,8 @@ const ResponsiveLayout: React.FC = () => {
   const [notifications, setNotifications] = useState(); // Default notification count
 
   // State for name and email
-  const [name, setName] = useState('Marc Jacob');
-  const [email, setEmail] = useState('marc.jacob@email.com');
+  const [name, setName] = useState('Michael Scott');
+  const [email, setEmail] = useState('michael.s@email.com');
 
   const handleSearchChange = (e: any) => {
     setSearchValue(e.target.value);
