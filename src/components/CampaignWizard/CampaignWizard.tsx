@@ -29,7 +29,7 @@ import Step0CampaignType from './Step0CampaignType';
 import { CampaignData, Schedule } from '../../types/campaign';
 import { createCampaign, fetchCampaignById } from '../../redux/slices/campaignSlice';
 import Step1Audience from './Step1Audience';
-import SuccessModal from './SuccessModal';
+import SuccessModal from '../Modals/SuccessModal';
 import { useNavigate } from 'react-router-dom';
 // import useUnsavedChangesWarning from '../../hooks/usePrompt';
 

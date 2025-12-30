@@ -31,6 +31,49 @@ export interface Filter{
     isTriggerFilter?: boolean;
 }
 
+export interface FilterBuilderProps {
+  mode?: "edit" | "create";
+  initialData?: any;
+  onSave?: (data: any) => void;
+  onDiscard?: () => void;
+}
+
+export interface Criteria {
+  key: string | null;
+  label: string;
+  dataType: string;
+  operator: string;
+  operators: string[];
+}
+
+export interface CriteriaBlockUI {
+  key: string;
+  label: string;
+  dataType: string;
+  operators: string[];
+}
+
+export interface AppliedCriteria {
+  key: string;
+  label: string;
+  dataType: string;
+  operator: string;
+  value: string;
+  availableOperators: string[];
+}
+
+export interface MenuItemType {
+  text: string;
+  icon: React.ReactNode;
+  path?: string;
+  active: boolean;
+  subItems?: Array<{
+    text: string;
+    path: string;
+    icon?: React.ReactNode;
+    active: boolean;
+  }>;
+}
 // const FilterSchema = new mongoose.Schema({
 //   name: { type: String, required: true },  
 //   description: { type: String },  

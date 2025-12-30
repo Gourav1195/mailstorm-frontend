@@ -17,6 +17,8 @@ console.log("API BASE:", apiClient.defaults.baseURL);
 //     return Promise.reject(error);
 //   }
 // );
+export const getAudienceEstimate = (payload: any) =>
+  apiClient.post("/audience/estimate", payload);
 
 
 export const fetchDashboardStats = async () => {

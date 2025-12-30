@@ -1,340 +1,185 @@
 import React, { useEffect, useState } from "react";
-import { useDrag, useDrop } from "react-dnd";
 import { useNavigate } from "react-router-dom";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { useSelector } from 'react-redux';
 import SaveIcon from '@mui/icons-material/Save';
-import AllModal from "../Modals/DeleteModal";
-import { DynamicIconProps } from '../../types/modal';
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Box,
   Button,
-  Card,
-  Tab,
-  Tabs,
   Typography,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  TextField,
-  MenuItem,
-  IconButton,
-  Select,
   Alert,
   InputBase,
-  FormControl,
-  InputLabel,
-
+  styled,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { CloseRounded, DragIndicator } from "@mui/icons-material";
-import AddIcon from "@mui/icons-material/Add";
-import { createCriteriaBlocks, getCriteriaBlocks, createOrUpdateFilter, getAudienceCount } from "../../api/apiClient";
+import AllModal from "../Modals/DeleteModal";
+import { DynamicIconProps } from '../../types/modal';
 import { useDispatch } from "react-redux";
+import { RootState } from "../../redux/store";
 import { AppDispatch } from "../../redux/store";
-import CloseIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
-import { set } from "lodash";
+import { createCriteriaBlocks, getCriteriaBlocks, createOrUpdateFilter, getAudienceCount } from "../../api/apiClient";
+import CriteriaBlockPanel from "./CriteriaBlockPanel";
+import FilterCanvas from "./FilterCanvas";
+import FilterSummary from "./FilterSummary";
+import SaveFilterModal from "./SaveFilterModal";
+import AddCriteriaModal from "./AddCriteriaModal";
+import { DESIGN_SYSTEM } from "design/theme";
 
-interface FilterBuilderProps {
-  mode?: "edit" | "create";
-  initialData?: any;
-  onSave?: (data: any) => void;
-  onDiscard?: () => void;
-}
+// Import interfaces and constants from separate files
+import {
+  FilterBuilderProps,
+  Criteria,
+  CriteriaBlockUI,
+  AppliedCriteria,
+} from "../../types/filter";
+import { operators, operatorLabels, initialCriteriaTabs } from "./constants";
 
-interface GroupCriteria {
-  key: string;
-  label: string;
-  dataType: string;
-  operator: string;
-  value: string;
-}
+// Theme-aware styled components
+const FilterContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  minWidth: "100%",
+  backgroundColor: DESIGN_SYSTEM.modes[mode].colors.background,
+  minHeight: '100vh',
+  padding: '16px',
+  transition: 'background-color 0.3s ease',
+}));
 
-interface Criteria {
-  key: string | null;
-  label: string;
-  dataType: string;
-  operator: string;
-  operators: string[];
-}
+const FilterHeader = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  marginBottom: '24px',
+  padding: '20px',
+  backgroundColor: DESIGN_SYSTEM.modes[mode].colors.surface,
+  borderRadius: DESIGN_SYSTEM.effects.borderRadius.md,
+  border: `1px solid ${DESIGN_SYSTEM.modes[mode].colors.border}`,
+  boxShadow: DESIGN_SYSTEM.effects.shadows[mode].default,
+}));
 
-interface CriteriaBlockUI {
-  key: string;
-  label: string;
-  dataType: string;
-  operators: string[];
-}
+const HeaderTitle = styled(Typography, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  fontSize: DESIGN_SYSTEM.typography.scale.h3.fontSize,
+  fontWeight: DESIGN_SYSTEM.typography.scale.h3.fontWeight,
+  color: DESIGN_SYSTEM.modes[mode].colors.textPrimary,
+  marginBottom: '8px',
+}));
 
-interface AppliedCriteria {
-  key: string;
-  label: string;       // UI only
-  dataType: string;
-  operator: string;
-  value: string;
-  availableOperators: string[];
-}
+const HeaderSubtitle = styled(Typography, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  fontSize: DESIGN_SYSTEM.typography.scale.body2.fontSize,
+  color: DESIGN_SYSTEM.modes[mode].colors.textSecondary,
+  lineHeight: 1.6,
+}));
 
-const operators: any = {
-  string: [
-    'equals',
-    'not equals',
-    'contains',
-    'notContains',
-    'startsWith',
-    'endsWith',
-    'isEmpty',
-    'isNotEmpty'
-  ],
-  number: [
-    'equals',
-    'not equals',
-    'greaterThan',
-    'greaterThanOrEqual',
-    'lessThan',
-    'lessThanOrEqual',
-    'between',
-    'in',
-    'notIn',
-    'isEmpty',
-    'isNotEmpty'
-  ],
-  date: [
-    'equals',
-    'not equals',
-    'before',
-    'after',
-    'on',
-    'not on',
-    'between',
-    'onOrBefore',
-    'onOrAfter',
-    'notBetween',
-    'isEmpty',
-    'isNotEmpty'
-  ],
-};
+const EditModeInput = styled(InputBase, {
+  shouldForwardProp: (prop) => prop !== 'mode' && prop !== 'active'
+})<{ mode: 'light' | 'dark'; active: boolean }>(({ mode, active }) => ({
+  fontSize: active ? '28px' : '14px',
+  fontWeight: active ? 600 : 400,
+  color: DESIGN_SYSTEM.modes[mode].colors.textPrimary,
+  backgroundColor: active ? `${DESIGN_SYSTEM.modes[mode].colors.primary}10` : 'transparent',
+  borderRadius: DESIGN_SYSTEM.effects.borderRadius.sm,
+  padding: active ? '12px 16px' : '8px 12px',
+  transition: 'all 0.2s ease',
+  width: '100%',
+  '&:hover': {
+    backgroundColor: `${DESIGN_SYSTEM.modes[mode].colors.primary}08`,
+  },
+  '&:focus': {
+    backgroundColor: `${DESIGN_SYSTEM.modes[mode].colors.primary}12`,
+    outline: `2px solid ${DESIGN_SYSTEM.modes[mode].colors.primary}`,
+    outlineOffset: '2px',
+  },
+}));
 
-const operatorLabels: { [key: string]: string } = {
-  "equals": "equals (=)",
-  "not equals": "not equals (!=)",
-  "contains": "contains (∋)",
-  "notContains": "not contains (∌)",
-  "startsWith": "starts with (^) ",
-  "endsWith": "ends with ($)",
-  "isEmpty": "is empty (∅)",
-  "isNotEmpty": "is not empty (≠∅)",
-  "greaterThan": "greater than (>)",
-  "greaterThanOrEqual": "greater than or equal (≥)",
-  "lessThan": "less than (<)",
-  "lessThanOrEqual": "less than or equal (≤)",
-  "between": "between (↔)",
-  "in": "in (∈)",
-  "notIn": "not in (∉)",
-  "before": "before (<)",
-  "after": "after (>)",
-  "on": "on (=)",
-  "not on": "not on (!=)",
-  "onOrBefore": "on or before (≤)",
-  "onOrAfter": "on or after (≥)",
-  "notBetween": "not between (≠↔)",
-};
+const SaveButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  backgroundColor: DESIGN_SYSTEM.modes[mode].colors.primary,
+  color: '#FFFFFF',
+  borderRadius: DESIGN_SYSTEM.effects.borderRadius.sm,
+  padding: '10px 24px',
+  fontWeight: 600,
+  textTransform: 'none',
+  fontSize: DESIGN_SYSTEM.typography.scale.body2.fontSize,
+  border: `1px solid ${DESIGN_SYSTEM.modes[mode].colors.primary}`,
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: DESIGN_SYSTEM.modes[mode].colors.primaryLight,
+    transform: 'translateY(-1px)',
+    boxShadow: DESIGN_SYSTEM.effects.shadows[mode].glow,
+  },
+  '&:disabled': {
+    backgroundColor: `${DESIGN_SYSTEM.modes[mode].colors.textTertiary}40`,
+    borderColor: DESIGN_SYSTEM.modes[mode].colors.border,
+    color: DESIGN_SYSTEM.modes[mode].colors.textTertiary,
+  },
+}));
 
+const DiscardButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  backgroundColor: 'transparent',
+  color: DESIGN_SYSTEM.modes[mode].colors.textSecondary,
+  borderRadius: DESIGN_SYSTEM.effects.borderRadius.sm,
+  padding: '10px 24px',
+  fontWeight: 600,
+  textTransform: 'none',
+  fontSize: DESIGN_SYSTEM.typography.scale.body2.fontSize,
+  border: `1px solid ${DESIGN_SYSTEM.modes[mode].colors.border}`,
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: `${DESIGN_SYSTEM.modes[mode].colors.primary}08`,
+    borderColor: DESIGN_SYSTEM.modes[mode].colors.primary,
+    color: DESIGN_SYSTEM.modes[mode].colors.primary,
+  },
+}));
 
+const DraftButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'mode'
+})<{ mode: 'light' | 'dark' }>(({ mode }) => ({
+  backgroundColor: `${DESIGN_SYSTEM.modes[mode].colors.accent}20`,
+  color: DESIGN_SYSTEM.modes[mode].colors.accent,
+  borderRadius: DESIGN_SYSTEM.effects.borderRadius.sm,
+  padding: '10px 24px',
+  fontWeight: 600,
+  textTransform: 'none',
+  fontSize: DESIGN_SYSTEM.typography.scale.body2.fontSize,
+  border: `1px solid ${DESIGN_SYSTEM.modes[mode].colors.accent}40`,
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: `${DESIGN_SYSTEM.modes[mode].colors.accent}30`,
+    borderColor: DESIGN_SYSTEM.modes[mode].colors.accent,
+    transform: 'translateY(-1px)',
+  },
+}));
 
-const initialCriteriaTabs: Record<string, CriteriaBlockUI[]> = {
-  Tab1: [],
-  Tab2: [],
-};
+const MainContent = styled(Box)({
+  display: "flex",
+  gap: "24px",
+  padding: "0 16px",
+  flexWrap: 'wrap',
+  '@media (max-width: 1200px)': {
+    flexDirection: 'column',
+  },
+});
 
-const ItemType = "CRITERIA";
-
-interface DraggableItemProps {
-  criteria: CriteriaBlockUI;
-}
-
-const DraggableItem: React.FC<DraggableItemProps> = ({ criteria }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemType,
-    item: { criteria: { ...criteria } },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }));
-
-  return (
-    <Box
-      ref={drag as any}
-      sx={{
-        opacity: isDragging ? 0.5 : 1,
-        cursor: "grab",
-        p: 1,
-        border: "3px solid #ECEEF6",
-        borderRadius: "10px",
-        mb: 1,
-        display: "flex",
-        alignItems: "center",
-        color: "#6D6976",
-      }}
-    >
-      <DragIndicator />
-      {criteria.label}
-    </Box>
-  );
-};
-
-// interface GroupCriteria extends Criteria {
-//   operator: string;
-//   value: string;
-// }
-
-interface DropGroupProps {
-  groupId: number;
-  items: AppliedCriteria[];
-  onDrop: (criteria: CriteriaBlockUI, groupId: number) => void;
-  onRemove: (criteriaLabel: string, groupId: number) => void;
-  onUpdate: (
-    criteriaLabel: string,
-    groupId: number,
-    field: keyof AppliedCriteria,
-    value: string
-  ) => void;
-}
-
-
-const DropGroup: React.FC<DropGroupProps> = ({
-  groupId,
-  items,
-  onDrop,
-  onRemove,
-  onUpdate,
-}) => {
-  const [, drop] = useDrop({
-    accept: ItemType,
-    drop: (item: { criteria: CriteriaBlockUI }) => {
-      onDrop(item.criteria, groupId);
-    },
-  });
-  const safeItems = Array.isArray(items) ? items : [];
-
-  return (
-    <Box
-      ref={drop as any}
-      sx={{
-        p: 0,
-        minHeight: 100,
-        mt: 0,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: safeItems.length === 0 ? "center" : "flex-start",
-        alignItems: safeItems.length === 0 ? "center" : "flex-start",
-        textAlign: "center",
-      }}
-    >
-      {safeItems.length === 0 ? (
-        <Box>
-          <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-            Drag and drop fields
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#A3AABC" }}>
-            Drag fields here to create custom filters
-          </Typography>
-        </Box>
-      ) : (
-        safeItems.map((item) => (
-          <Box
-            key={item.label}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              p: 1,
-              border: "1px solid #ccc",
-              mt: 1,
-              bgcolor: '#ffffff',
-              color: '#6D6976',
-            }}
-          >
-            <Typography>{item.label}</Typography>
-            <Select
-              value={item.operator || ""}
-              onChange={(e) => onUpdate(item.label, groupId, "operator", e.target.value)}
-              size="small"
-              displayEmpty
-              renderValue={(selected) =>
-                selected ? operatorLabels[selected] || selected : <em>Select</em>
-              }
-              sx={{ color: '#6D6976', }}
-            >
-              {item.availableOperators.map((op: string) => (
-                <MenuItem key={op} value={op} sx={{ color: '#6D6976', }}>
-                  {operatorLabels[op] || op}
-                </MenuItem>
-              ))}
-            </Select>
-
-            {item.dataType === "string" ? (
-              <TextField
-                size="small"
-                value={item.value}
-                onChange={(e) =>
-                  onUpdate(item.label, groupId, "value", e.target.value)
-                }
-                sx={{
-                  "& .MuiInputBase-input": {
-                    color: "#6D6976",
-                  },
-                }}
-              />
-            ) : item.dataType === "date" ? (
-              <TextField
-                type="date"
-                size="small"
-                value={item.value}
-                onChange={(e) =>
-                  onUpdate(item.label, groupId, "value", e.target.value)
-                }
-                sx={{
-                  "& .MuiInputBase-input": {
-                    color: "#6D6976",
-                  },
-                }}
-              />
-            ) : (
-              <TextField
-                type="number"
-                size="small"
-                value={item.value}
-                onChange={(e) =>
-                  onUpdate(item.label, groupId, "value", e.target.value)
-                }
-                sx={{
-                  "& .MuiInputBase-input": {
-                    color: "#6D6976",
-                  },
-                }}
-              />
-            )}
-            <IconButton
-              size="small"
-              onClick={() => onRemove(item.label, groupId)}
-            >
-              <DeleteIcon fontSize="small" sx={{ "&:hover": { color: 'red' } }} />
-            </IconButton>
-          </Box>
-        ))
-      )}
-    </Box>
-  );
-};
-  
-
-const App: React.FC<FilterBuilderProps> = ({
-  mode = "create",
+// Main component
+const FilterBuilder: React.FC<FilterBuilderProps> = ({
+  mode: propMode = "create",
   initialData,
   onSave,
   onDiscard,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  
+  // Get theme mode from Redux
+  const themeMode = useSelector((state: RootState) => state.theme.mode);
+  
   const [groupsByTab, setGroupsByTab] = useState<{ [tab: string]: any[] }>({});
   const [groupOperatorsByTab, setGroupOperatorsByTab] = useState<{ [tab: string]: { [groupId: number]: string } }>({});
   const [logicalOperatorsByTab, setLogicalOperatorsByTab] = useState<{ [tab: string]: { [index: number]: "AND" | "OR" } }>({
@@ -359,7 +204,6 @@ const App: React.FC<FilterBuilderProps> = ({
     operators: []
   });
 
-  const [currentTab, setCurrentTab] = useState<string>("");
   const [validationError, setValidationError] = useState<{ criteria: string[], filter: string[], main: string[] }>({ criteria: [], filter: [], main: [] });
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isTypingFields, setIsTypingFields] = useState<{
@@ -393,7 +237,7 @@ const App: React.FC<FilterBuilderProps> = ({
   }, []);
 
   useEffect(() => {
-    if (mode === "edit" && initialData) {
+    if (propMode === "edit" && initialData) {
       setSaveFilterName(initialData.name || "");
       setSaveDescription(initialData.description || "");
       setSaveTags((initialData.tags || []).join(", "));
@@ -416,9 +260,8 @@ const App: React.FC<FilterBuilderProps> = ({
                 availableOperators: found?.operators || [],
               };
             })
-          : [], // 👈 critical
+          : [],
       }));
-
 
       const groupOps: any = {};
       const logicOps: any = {};
@@ -433,14 +276,13 @@ const App: React.FC<FilterBuilderProps> = ({
       setLogicalOperatorsByTab({ [tabKey]: logicOps });
       setActiveTab(tabKey);
     }
-  }, [initialData, mode]);
+  }, [initialData, propMode]);
 
   let mainError: string[] = []
 
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get('isRedirect');
   const isRedirect = redirect === 'true';
-  console.log('isRedirect', isRedirect);
 
   const handleClose = () => {
     setModalData(prev => ({ ...prev, open: false }))
@@ -532,7 +374,6 @@ const App: React.FC<FilterBuilderProps> = ({
         [activeTab]: [...currentGroups, { id: newGroupId, criteria: [] }],
       };
     });
-
     setGroupOperatorsByTab((prev) => {
       const currentGroupOperators = prev[activeTab] || {};
       return {
@@ -541,7 +382,6 @@ const App: React.FC<FilterBuilderProps> = ({
       };
     });
   };
-
 
   const handleDrop = (criteria: CriteriaBlockUI, groupId: number) => {
     setGroupsByTab((prev) => {
@@ -556,7 +396,6 @@ const App: React.FC<FilterBuilderProps> = ({
             setTimeout(() => setValidationError(prev => ({ ...prev, main: [] })), 6000);
             return group;
           }
-
           return {
             ...group,
             criteria: [
@@ -577,7 +416,6 @@ const App: React.FC<FilterBuilderProps> = ({
       return { ...prev, [activeTab]: updatedGroups };
     });
   };
-
 
   const handleUpdateItem = (
     criteriaLabel: string,
@@ -600,7 +438,6 @@ const App: React.FC<FilterBuilderProps> = ({
         }
         return group;
       });
-
       return {
         ...prev,
         [activeTab]: updatedGroups,
@@ -608,11 +445,9 @@ const App: React.FC<FilterBuilderProps> = ({
     });
   };
 
-
   const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
     const currentGroups = groupsByTab[activeTab] || [];
     if (currentGroups.some((group) => group.criteria.length > 0)) {
-      // showAlertModal("As already added 1 block, cannot switch tab");
       mainError.push("As already added 1 block, cannot switch tab");
       setValidationError(prev => ({
         ...prev,
@@ -620,18 +455,12 @@ const App: React.FC<FilterBuilderProps> = ({
       }));
       setTimeout(() => setValidationError(prev => ({ ...prev, main: [] })), 6000);
       return;
-
-      // setTimeout(() => {
-      //   setActiveTab(activeTab);
-      // }, 0);
-      // return;
     }
     setActiveTab(newValue);
-    console.log('newValue', newValue);
   };
 
   const handleOpenModal = (tab: string) => {
-    setCurrentTab(tab);
+    setActiveTab(tab);
     setNewCriteria({ key: null, label: "", dataType: "string" , operator:"equals", operators: []});
     setIsModalOpen(true);
   };
@@ -668,8 +497,7 @@ const App: React.FC<FilterBuilderProps> = ({
       setTimeout(() => setValidationError(prev => ({ ...prev, criteria: [] })), 6000);
       return;
     }
-    // console.log("acitve tab", activeTab);
-    console.log("new criteria", newCriteria);
+    
     const generatedKey = newCriteria.label.trim().toLowerCase().replace(/\s+/g, '_');
     createCriteriaBlocks({
       key: generatedKey,
@@ -679,7 +507,6 @@ const App: React.FC<FilterBuilderProps> = ({
       operators: [newCriteria.operator]
     })
       .then((res) => {
-        console.log("res", res);
         handleBlockSuccess();
         fetchBlocks();
         handleCloseModal();
@@ -722,7 +549,7 @@ const App: React.FC<FilterBuilderProps> = ({
     getCriteriaBlocks().then((res) => {
       const tab1Data: any = [];
       const tab2Data: any = [];
-      console.log("res", res);
+      
       res.data.data.forEach((item: any) => {
         const criteriaObj = {
           key: item.key,
@@ -749,26 +576,6 @@ const App: React.FC<FilterBuilderProps> = ({
     fetchBlocks();
   }, []);
 
-  /*
-    const handleInputChange = (groupId: number, criteriaLabel: string, field: string, value: string) => {
-      setGroupsByTab((prev) => {
-        const updatedGroups = prev[activeTab].map((group) => {
-          if (group.id === groupId) {
-            return {
-              ...group,
-              criteria: group.criteria.map((item: Criteria) => {
-                if (item.label === criteriaLabel) {
-                  return { ...item, [field]: value };
-                }
-                return item;
-              }),
-            };
-          }
-          return group;
-        });
-        return { ...prev, [activeTab]: updatedGroups };
-      });
-    };*/
   const handleSaveFilter = () => {
     const groups = groupsByTab[activeTab];
 
@@ -813,9 +620,8 @@ const App: React.FC<FilterBuilderProps> = ({
   let confirmFilterError: string[] = [];
 
   const handleConfirmSaveFilter = async () => {
-    // console.log('///////////////////////////', mode)
     if (!saveFilterName.trim() || saveFilterName.trim().length < 3 || saveFilterName.trim().length > 40 || !/[a-zA-Z0-9]/.test(saveFilterName)) {
-      if (mode === "create") {
+      if (propMode === "create") {
         confirmFilterError.push("Filter name must be 3 to 40 characters and include at least one letter or number.");
       }
       else {
@@ -823,14 +629,14 @@ const App: React.FC<FilterBuilderProps> = ({
       }
     }
     if (
-      mode === 'edit' &&
+      propMode === 'edit' &&
       saveFilterName.trim().toLowerCase().startsWith('copy')
     ) {
       mainError.push("Filter name can't start with 'Copy'");
     }
 
     if (!saveDescription.trim() || !/[a-zA-Z0-9]/.test(saveDescription)) {
-      if (mode === "create") {
+      if (propMode === "create") {
         confirmFilterError.push("Description is required and should contain either one letter or number.");
       } else {
         mainError.push("Description is required and should contain either one letter or number.");
@@ -839,7 +645,7 @@ const App: React.FC<FilterBuilderProps> = ({
 
     const groups = groupsByTab[activeTab];
     if (!groups || groups.length === 0) {
-      if (mode === 'create') {
+      if (propMode === 'create') {
         confirmFilterError.push("Please create at least one group before saving.");
       } else {
         mainError.push("Please create at least one group before saving.");
@@ -859,8 +665,6 @@ const App: React.FC<FilterBuilderProps> = ({
     }
 
     if (mainError.length > 0) {
-      console.log('confirm filter error set');
-
       setValidationError(prev => ({
         ...prev,
         main: [...prev.main, ...mainError]
@@ -870,8 +674,6 @@ const App: React.FC<FilterBuilderProps> = ({
     }
 
     if (confirmFilterError.length > 0) {
-      console.log('confirm filter error set');
-
       setValidationError(prev => ({
         ...prev,
         filter: [...prev.filter, ...confirmFilterError]
@@ -912,7 +714,7 @@ const App: React.FC<FilterBuilderProps> = ({
     };
 
     try {
-      if (mode === "edit" && onSave) {
+      if (propMode === "edit" && onSave) {
         onSave(payload);
         handleEditSuccess();
       } else {
@@ -951,7 +753,6 @@ const App: React.FC<FilterBuilderProps> = ({
     }
 
     if (mainError.length > 0) {
-      console.log('main error set');
       setValidationError(prev => ({
         ...prev,
         main: [...prev.main, ...mainError]
@@ -999,602 +800,219 @@ const App: React.FC<FilterBuilderProps> = ({
     }
   };
 
-
   return (
-
-    <Box sx={{ minWidth: "100%" }}>
-      <Box sx={{ m: 2 }}>
-        <Box sx={{ position: 'relative', }}>
-          {mode === 'create' &&
-            (<><Typography variant="h4">
-              Build Your Audience Filter
-            </Typography>
-              <Typography variant="body2" sx={{ color: "#626262", mt: 1 }}>
-                "Use the tools below to define the exact audience you want to target. Drag, drop, or select options to create powerful filters with ease."
-              </Typography></>
-            )}
-
-          {mode === "edit" ? (
-            <Box sx={{ position: 'absolute', right: 0, top: 10 }}>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={handleDiscard}
-                sx={{ minWidth: '160px', p: 1.1, fontSize: '14px' }}
-              >
-                <DeleteIcon />&nbsp;Discard
-              </Button>
-
-              <Button variant="contained" sx={{ minWidth: '160px', fontSize: '14px', bgcolor: '#0057D9', color: '#fff  ', p: 1.1, ml: 2, ":hover": { bgcolor: '#2068d5' } }}
-                onClick={handleConfirmSaveFilter}>
-                <SaveIcon /> &nbsp; Save Changes
-              </Button>
-            </Box>
-          ) : (
-            <Button variant="contained" color="primary" onClick={handleSaveFilter} sx={{ position: 'absolute', right: 0, top: 10, minWidth: '160px', fontSize: '14px', bgcolor: '#0057D9', color: '#fff  ', p: 1.1, m: 0, ":hover": { bgcolor: '#2068d5' } }}>
-              <SaveIcon />&nbsp;Save Filter
-            </Button>
-          )}
-        </Box>
-
-        {mode === "edit" && (
-          <Box sx={{
-            display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 500,
-            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
+    <DndProvider backend={HTML5Backend}>
+      <FilterContainer mode={themeMode}>
+        {/* Header Section */}
+        <FilterHeader mode={themeMode}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: 2 
           }}>
-            <InputBase
-              placeholder="Filter Name"
-              value={saveFilterName}
-              onChange={(e) => setSaveFilterName(e.target.value)}
-              onFocus={() => setIsTypingFields(prev => ({ ...prev, name: true }))}
-              onBlur={() => setIsTypingFields(prev => ({ ...prev, name: false }))}
-
-              sx={{
-                '& .MuiInputBase-input': {
-                  fontSize: '28px',
-                  fontWeight: 'semi-bold',
-                  boxShadow: isTypingFields.name
-                    ? 'inset 0px 0px 10px rgb(213, 238, 255)'
-                    : 'none',
-                },
-              }}
-              required
-            />
-            <InputBase
-              placeholder="Description"
-              value={saveDescription}
-              onChange={(e) => setSaveDescription(e.target.value)}
-              onFocus={() => setIsTypingFields(prev => ({ ...prev, description: true }))}
-              onBlur={() => setIsTypingFields(prev => ({ ...prev, description: false }))}
-              required
-              sx={{
-                '& .MuiInputBase-input': {
-                  fontSize: '14px',
-                  color: '#626262',
-                  // bgcolor: isTypingFields.description ? ' #f2f2f2' : "transparent",
-                  boxShadow: isTypingFields.description
-                    ? 'inset 0px 0px 10px rgb(213, 238, 255)'
-                    : 'none',
-                },
-              }}
-            />
-              <InputBase
-                placeholder="Tags (comma separated)"
-                onFocus={() => setIsTypingFields(prev => ({ ...prev, tags: true }))}
-                onBlur={() => setIsTypingFields(prev => ({ ...prev, tags: false }))}
-                value={saveTags}
-                onChange={(e) => setSaveTags(e.target.value)}
-                sx={{
-                  '& .MuiInputBase-input': {
-                    fontSize: '12px',
-                    color: '#626262',
-                    boxShadow: isTypingFields.tags
-                      ? 'inset 0px 0px 10px rgb(213, 238, 255)'
-                      : 'none',
-                  },
-                }}
-              />
-            
-          </Box>
-        )}
-      </Box>
-
-      {validationError.main.length > 0 && (
-        <Alert variant='outlined' severity="warning" sx={{ ml: 2, mr: 2 }}>
-          {validationError.main[validationError.main.length - 1]}
-        </Alert>
-      )}
-      {/* <DndProvider backend={HTML5Backend}> */}
-      <Box sx={{ display: "flex", gap: 2, p: 2 }}>
-        <Card sx={{ p: 2, width: 335 }}>
-          <Tabs value={activeTab} onChange={handleTabChange}>
-            {Object.keys(criteriaTabs).map((tab, index) => (
-              <Tab
-                key={tab}
-                label={index === 0 ? "Filter Components" : "Trigger Filters"}
-                value={tab}
-              />
-            ))}
-          </Tabs>
-          <Box sx={{ mt: 2 }}>
-            <Box
-              sx={{
-                mt: 2,
-                mb: 2,
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: "#F8F9FA",
-                borderRadius: "8px",
-                padding: "4px 8px",
-              }}
-            >
-              <InputLabel >
-                <SearchIcon fontSize="small" sx={{ mt: 0.6, color: '#A2A2A2' }} />
-              </InputLabel>
-              <TextField
-                placeholder="Search Fields"
-                variant="standard"
-                InputProps={{
-                  disableUnderline: true,
-                  style: { color: "#A2A2A2" },
-                }}
-                value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value) }}
-                fullWidth
-                sx={{
-                  backgroundColor: "#F8F9FA",
-                  borderRadius: "8px",
-                  paddingLeft: "8px",
-                }}
-              />
-            </Box>
-            <Typography
-              sx={{ mb: 2, color: "#232232", fontWeight: "bold" }}
-            >
-              Criteria Blocks
-            </Typography>
-            <Box sx={{ maxHeight: '42vh', overflowY: 'auto', m: 2 }}>
-              {criteriaTabs[activeTab]
-                .filter((criteria: any) =>
-                  typeof criteria.label === "string" &&
-                  criteria.label.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .map((criteria: any) => (
-                  <DraggableItem key={criteria.label} criteria={criteria} />
-                ))}
-            </Box>
-
-            <Button
-              variant="text"
-              color="primary"
-              onClick={() => handleOpenModal(activeTab)}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                fontWeight: 600,
-                width: "100%",
-                mt: 2,
-                textTransform: "none",
-              }}
-            >
-              <AddIcon fontSize="small" />
-              Add Custom Field
-            </Button>
-          </Box>
-
-        </Card>
-        <Box sx={{ width: "50%" }}>
-          <Card sx={{ p: 2, }}>
-            <Typography variant="h6" sx={{}}>
-              Filter Canvas
-            </Typography>
-            <Typography variant="subtitle1" sx={{ mb: 2, color: "#A3AABC" }}>
-              Create your custom filter by combining multiple conditions.
-            </Typography>
-
-            {(groupsByTab[activeTab] || []).map((group, index) => (
-              <React.Fragment key={group.id}>
-                {/* Show 'Match groups with' only between groups */}
-                {index > 0 && (
-                  <Box
-                    sx={{
-                      mt: 2,
-                      mb: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Typography variant="body2">Match groups with:</Typography>
-                    <Select
-                      value={logicalOperatorsByTab[activeTab]?.[index] || "OR"}
-                      onChange={(e) =>
-                        setLogicalOperatorsByTab((prev) => ({
-                          ...prev,
-                          [activeTab]: {
-                            ...prev[activeTab],
-                            [index]: e.target.value as "AND" | "OR",
-                          },
-                        }))
-                      }
-                      size="small"
-                    >
-                      <MenuItem value="AND">AND</MenuItem>
-                      <MenuItem value="OR">OR</MenuItem>
-                    </Select>
-                  </Box>
-                )}
-
-                {/* Group Box */}
-                <Box
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    border: "0.5px dashed #A3AABC",
-                    borderRadius: "2px",
-                    borderWidth: "3px",
-                    bgcolor:'#F8F9FA'
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                      Group {index + 1}
-                    </Typography>
-                    <Button
-                      variant="text"
-                      color="inherit"
-                      size="small"
-                      onClick={() => handleDeleteGroup(group.id)}
-                      sx={{
-                        color: "grey.600",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                      }}
-                    >
-                      Clear
-                      <CloseRounded fontSize="small" />
-                    </Button>
-                  </Box>
-
-                  {/* Inside group operator */}
-                  <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="body2">Within group:</Typography>
-                    <Select
-                      value={groupOperatorsByTab[activeTab]?.[group.id] || "AND"}
-                      onChange={(e) =>
-                        setGroupOperatorsByTab((prev) => ({
-                          ...prev,
-                          [activeTab]: {
-                            ...prev[activeTab],
-                            [group.id]: e.target.value as "AND" | "OR",
-                          },
-                        }))
-                      }
-                      size="small"
-                      sx={{ minWidth: 80, bgcolor: "#ffffff", color: '#6D6976', borderRadius: "4px" }}
-                    >
-                      <MenuItem value="AND">AND</MenuItem>
-                      <MenuItem value="OR">OR</MenuItem>
-                    </Select>
-                  </Box>
-
-                  {/* DropGroup */}
-                  <DropGroup
-                    groupId={group.id}
-                    items={group.criteria}
-                    onDrop={handleDrop}
-                    onRemove={handleRemoveItem}
-                    onUpdate={handleUpdateItem}
+            <Box sx={{ flex: 1 }}>
+              {propMode === 'create' ? (
+                <>
+                  <HeaderTitle mode={themeMode}>
+                    Build Your Audience Filter
+                  </HeaderTitle>
+                  <HeaderSubtitle mode={themeMode}>
+                    Use the tools below to define the exact audience you want to target. 
+                    Drag, drop, or select options to create powerful filters with ease.
+                  </HeaderSubtitle>
+                </>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <EditModeInput
+                    mode={themeMode}
+                    active={isTypingFields.name}
+                    placeholder="Filter Name"
+                    value={saveFilterName}
+                    onChange={(e) => setSaveFilterName(e.target.value)}
+                    onFocus={() => setIsTypingFields(prev => ({ ...prev, name: true }))}
+                    onBlur={() => setIsTypingFields(prev => ({ ...prev, name: false }))}
+                  />
+                  <EditModeInput
+                    mode={themeMode}
+                    active={isTypingFields.description}
+                    placeholder="Description"
+                    value={saveDescription}
+                    onChange={(e) => setSaveDescription(e.target.value)}
+                    onFocus={() => setIsTypingFields(prev => ({ ...prev, description: true }))}
+                    onBlur={() => setIsTypingFields(prev => ({ ...prev, description: false }))}
+                    multiline
+                    minRows={2}
+                  />
+                  <EditModeInput
+                    mode={themeMode}
+                    active={isTypingFields.tags}
+                    placeholder="Tags (comma separated)"
+                    value={saveTags}
+                    onChange={(e) => setSaveTags(e.target.value)}
+                    onFocus={() => setIsTypingFields(prev => ({ ...prev, tags: true }))}
+                    onBlur={() => setIsTypingFields(prev => ({ ...prev, tags: false }))}
                   />
                 </Box>
-              </React.Fragment>
-            ))}
-
-            <Box
-              sx={{
-                mt: 2,
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-              }}
-            >
-              <Button
-                variant="text"
-                color="primary"
-                onClick={addGroup}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  fontWeight: 600,
-                  textTransform: "none",
-                }}
-              >
-                <AddIcon fontSize="small" />
-                Add Group
-              </Button>
+              )}
             </Box>
-            {/* Save Buttons */}
 
-          </Card>
-          {
-            mode === 'create' && (
-              <Button
-                variant="contained"
-                color="success"
-                onClick={handleSaveDraftFilter}
-                sx={{ minWidth: '160px', p: 1.1, mt: 2, ml: 'auto', fontSize: '14px', display: 'flex', justifyContent: 'center', }}
-              ><SaveIcon />&nbsp; Save Draft
-              </Button>
-            )
-          }
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2,
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end'
+            }}>
+              {propMode === "edit" ? (
+                <>
+                  <DiscardButton 
+                    mode={themeMode}
+                    onClick={handleDiscard}
+                    startIcon={<DeleteIcon />}
+                  >
+                    Discard
+                  </DiscardButton>
+                  <SaveButton 
+                    mode={themeMode}
+                    onClick={handleConfirmSaveFilter}
+                    startIcon={<SaveIcon />}
+                  >
+                    Save Changes
+                  </SaveButton>
+                </>
+              ) : (
+                <SaveButton 
+                  mode={themeMode}
+                  onClick={handleSaveFilter}
+                  startIcon={<SaveIcon />}
+                >
+                  Save Filter
+                </SaveButton>
+              )}
+            </Box>
+          </Box>
 
-        </Box>
-        <Card sx={{ p: 2, width: 300 }}>
-          <Typography variant="h6" sx={{}}>
-            Filter Summary
-          </Typography>
-          <Typography variant="subtitle1" sx={{ mb: 2, color: "#A3AABC" }}>
-            Preview your audience
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ mb: 0, color: "#6D6976", fontWeight: 600 }}
-          >
-            Estimated Audience
-          </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "flex-end",
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 600,
-                marginRight: "4px",
-                marginBottom: "-4px",
+          {validationError.main.length > 0 && (
+            <Alert 
+              severity="warning" 
+              sx={{ 
+                mt: 2,
+                backgroundColor: `${DESIGN_SYSTEM.modes[themeMode].colors.warningBg}`,
+                color: DESIGN_SYSTEM.modes[themeMode].colors.warning,
+                border: `1px solid ${DESIGN_SYSTEM.modes[themeMode].colors.warning}40`,
               }}
             >
-              {estimatedAudience}
-            </Typography>
-            <Typography sx={{ color: "#A3AABC" }}>people</Typography>
-          </Box>
-        </Card>
-      </Box>
-      {/* Save Filter Modal */}
-      <Dialog open={isSaveFilterModalOpen} onClose={() => setIsSaveFilterModalOpen(false)}>
-
-        <Box sx={{ bgcolor: '#0057D9', width: '100%', height: 35, display: 'flex', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: "white", ml: 2, mt: 0.5 }}>Save Filter</Typography>
-          <IconButton onClick={() => setIsSaveFilterModalOpen(false)}>
-            <CloseIcon sx={{ color: "white" }} />
-          </IconButton>
-        </Box>
-        <Card sx={{ width: 400, p: 2, mx: "auto", outline: "none", }}>
-          {validationError.filter.length > 0 && (
-            <Alert variant='outlined' severity="warning" sx={{ mb: 1 }}>
-              {validationError.filter[0]}
+              {validationError.main[validationError.main.length - 1]}
             </Alert>
           )}
+        </FilterHeader>
 
-          <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1 }}>
-            <InputLabel sx={{ display: 'flex' }}>
-              Filter Name<Typography color="red">*</Typography>
-            </InputLabel>
-            <InputBase
-              value={saveFilterName}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSaveFilterName(val);
-              }}
-              sx={{
-                width: "100%",
-                pt: 0.5,
-              }}
-              required
-              fullWidth
-            />
-          </FormControl>
+        {/* Main Content Area */}
+        <MainContent>
+          <CriteriaBlockPanel
+            mode={themeMode}
+            activeTab={activeTab}
+            criteriaTabs={criteriaTabs}
+            searchTerm={searchTerm}
+            onTabChange={handleTabChange}
+            onSearchChange={setSearchTerm}
+            onAddCustomField={handleOpenModal}
+          />
 
-          <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1, mt: 2 }}>
-            <InputLabel sx={{ display: 'flex' }}>
-              Description<Typography color="red">*</Typography>
-            </InputLabel>
-            <InputBase
-              value={saveDescription}
-              onChange={(e) => setSaveDescription(e.target.value)}
-              sx={{
-                fontSize: "14px",
-                width: "100%",
-                pt: 0.5,
-                mt: 2,
-              }}
-              required
-              fullWidth
-              multiline
-              minRows={5}
-            // inputRef={messageRef}
-            />
-          </FormControl>
+          <FilterCanvas
+            mode={themeMode}
+            activeTab={activeTab}
+            groupsByTab={groupsByTab}
+            groupOperatorsByTab={groupOperatorsByTab}
+            logicalOperatorsByTab={logicalOperatorsByTab}
+            onAddGroup={addGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onDrop={handleDrop}
+            onRemoveItem={handleRemoveItem}
+            onUpdateItem={handleUpdateItem}
+            onGroupOperatorChange={(groupId, value) =>
+              setGroupOperatorsByTab(prev => ({
+                ...prev,
+                [activeTab]: { ...prev[activeTab], [groupId]: value }
+              }))
+            }
+            onLogicalOperatorChange={(index, value) =>
+              setLogicalOperatorsByTab(prev => ({
+                ...prev,
+                [activeTab]: { ...prev[activeTab], [index]: value }
+              }))
+            }
+          />
 
-          <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1, mt: 2 }}>
-            <InputLabel sx={{ display: 'flex' }}>
-              Tags (comma separated)
-            </InputLabel>
-            <InputBase
-              value={saveTags}
-              onChange={(e) => setSaveTags(e.target.value)}
-              sx={{
-                width: "100%",
-                pt: 0.5,
-              }}
-              fullWidth
-            />
-          </FormControl>
+          <FilterSummary 
+            mode={themeMode}
+            estimatedAudience={estimatedAudience} 
+          />
+        </MainContent>
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
-            <Button
-              onClick={() => setIsSaveFilterModalOpen(false)}
-              variant="outlined"
-              color="secondary"
-              sx={{ width: "48%" }}
+        {/* Draft Button for create mode */}
+        {propMode === 'create' && (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            mt: 3,
+            px: 3 
+          }}>
+            <DraftButton
+              mode={themeMode}
+              onClick={handleSaveDraftFilter}
+              startIcon={<SaveIcon />}
             >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmSaveFilter}
-              variant="contained"
-              color="primary"
-              sx={{ width: "48%", bgcolor: '#0057D9' }}
-              disabled={!saveFilterName || !saveDescription}
-            >
-              Save
-            </Button>
+              Save Draft
+            </DraftButton>
           </Box>
-        </Card>
-      </Dialog>
-      <Dialog open={isModalOpen} onClose={handleCloseModal} >
-        <Box sx={{ width: '450px' }}>
-          <Box sx={{ bgcolor: '#0057D9', width: '100%', height: 35, display: 'flex', justifyContent: 'space-between' }}>
-            <Typography sx={{ color: "white", ml: 2, mt: 0.5 }}>Add New Criteria Block</Typography>
-            <IconButton onClick={handleCloseModal}>
-              <CloseIcon sx={{ color: "white" }} />
-            </IconButton>
-          </Box>
-          <DialogContent>
+        )}
 
-            {validationError.criteria.length > 0 && (
-              <Alert variant='outlined' severity="warning" sx={{ mb: 1 }}>
-                {validationError.criteria[0]}
-              </Alert>
-            )}
+        {/* Modals */}
+        <SaveFilterModal
+          mode={themeMode}
+          open={isSaveFilterModalOpen}
+          saveFilterName={saveFilterName}
+          saveDescription={saveDescription}
+          saveTags={saveTags}
+          validationError={validationError}
+          onClose={() => setIsSaveFilterModalOpen(false)}
+          onSave={handleConfirmSaveFilter}
+          onFilterNameChange={setSaveFilterName}
+          onDescriptionChange={setSaveDescription}
+          onTagsChange={setSaveTags}
+        />
 
-            <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1 }}>
-              <InputLabel sx={{ display: 'flex' }}>
-                Block Name<Typography color="red">*</Typography>
-              </InputLabel>
-              <InputBase
-                value={newCriteria.label}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setNewCriteria({ ...newCriteria, label: val });
-                }}
-                required
-                fullWidth
-              />
-            </FormControl>
+        <AddCriteriaModal
+          mode={themeMode}
+          open={isModalOpen}
+          newCriteria={newCriteria}
+          validationError={validationError}
+          createBlockError={createBlockError}
+          operators={operators}
+          operatorLabels={operatorLabels}
+          onClose={handleCloseModal}
+          onSave={handleSaveCriteria}
+          onCriteriaChange={(field, value) =>
+            setNewCriteria({ ...newCriteria, [field]: value })
+          }
+        />
 
-            <FormControl fullWidth variant="outlined" size="medium" sx={{
-              minWidth: 200, bgcolor: "#F8F9FA", borderRadius: "6px", mt: 2.5,
-              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            }}>
-              <InputLabel sx={{ display: 'flex' }}>
-                Data Type<Typography color="red">*</Typography>
-              </InputLabel>
-              <Select
-                value={newCriteria.dataType || ''}
-                label="Data Type"
-                onChange={(e) =>
-                  setNewCriteria({
-                    ...newCriteria,
-                    dataType: e.target.value + "",
-                  })}
-                required
-                sx={{ color: "#6D6976", }}
-              >
-                {[
-                  'string',
-                  'date',
-                  'number',
-                ].map((c) => (
-                  <MenuItem key={c} value={c} sx={{ color: "#6D6976", }}>
-                    {c}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth variant="outlined" size="medium" sx={{
-              minWidth: 200, bgcolor: "#F8F9FA", borderRadius: "6px", mt: 2.5,
-              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            }}>
-              <InputLabel sx={{ display: 'flex' }}>
-                Operator<Typography color="red">*</Typography>
-              </InputLabel>
-              <Select
-                value={newCriteria.operator || ""}
-                label="Operator"
-                onChange={(e) =>
-                  setNewCriteria({
-                    ...newCriteria,
-                    operator: e.target.value || "",
-                  })
-                }
-                required
-                sx={{ color: "#6D6976", }}
-              >
-                {newCriteria.dataType &&
-                  operators[newCriteria.dataType].map((operator: string) => (
-                    <MenuItem key={operator} value={operator} sx={{ color: "#6D6976" }}>
-                      {operatorLabels[operator] || operator}
-                    </MenuItem>
-                  ))}
-
-              </Select>
-            </FormControl>
-
-            <p>
-              <small style={{ color: "red" }}>{createBlockError}</small>
-            </p>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseModal}>Cancel</Button>
-            <Button
-              onClick={handleSaveCriteria}
-              variant="contained"
-              color="primary"
-              sx={{ bgcolor: '#0057D9' }}
-              disabled={!newCriteria.label || !newCriteria.dataType || !newCriteria.operator}
-            >
-              Save
-            </Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
-
-
-
-      <AllModal
-        open={modalData.open}
-        handleClose={modalData.handleClose}
-        handleConfirm={modalData.handleConfirm}
-        title={modalData.title}
-        message={modalData.message}
-        btntxt={modalData.btntxt}
-        icon={modalData.icon}
-        color={modalData.color}
-      />
-    </Box>
-
+        {/* Keep the existing AllModal */}
+        <AllModal
+          open={modalData.open}
+          handleClose={modalData.handleClose}
+          handleConfirm={modalData.handleConfirm}
+          title={modalData.title}
+          message={modalData.message}
+          btntxt={modalData.btntxt}
+          icon={modalData.icon}
+          color={modalData.color}
+        />
+      </FilterContainer>
+    </DndProvider>
   );
 };
 
-export default App;
+export default FilterBuilder;
