@@ -1,33 +1,34 @@
-import 
-// React,
- { useState } from 'react';
+import { useState } from 'react';
 import {
   AppBar,
   Toolbar,
   Typography,
   Box,
-  TextField,
   IconButton,
   Menu,
   MenuItem,
   Avatar,
   Badge,
-  InputAdornment,
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ArrowDropDown';
+import { useSelector } from 'react-redux';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { RootState } from 'redux/store'; // Import your RootState
+import { useAppDispatch } from '../../src/redux/hooks';
+import { toggleTheme } from 'redux/slices/themeSlice';
 
 const Header = (props: any) => {
-  const { drawerWidth = 240 } = props; // Default value for drawerWidth if not passed
-
+  const { drawerWidth = 240 } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [searchValue, setSearchValue] = useState('');
-  const [notifications, setNotifications] = useState(); // Default notification count
+  const [notifications] = useState(0); // Default notification count
+  const [name] = useState('Michael Scott');
+  const [email] = useState('michael.s@email.com');
 
-  // State for name and email
-  const [name, setName] = useState('Michael Scott');
-  const [email, setEmail] = useState('michael.s@email.com');
+  // ✅ Get theme mode from Redux
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const dispatch = useAppDispatch();
 
   const handleProfileMenuOpen = (event: any) => {
     setAnchorEl(event.currentTarget);
@@ -37,8 +38,9 @@ const Header = (props: any) => {
     setAnchorEl(null);
   };
 
-  const handleSearchChange = (e: any) => {
-    setSearchValue(e.target.value);
+  // ✅ Only dispatch on button click
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
   };
 
   return (
@@ -55,7 +57,7 @@ const Header = (props: any) => {
         }}
       >
         <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Left part: Welcome text and subtext */}
+          {/* Left part: Welcome text */}
           <Box>
             <Typography variant="h6" sx={{ fontSize: "16px", color: 'text.secondary' }}>
               Welcome, {name}!
@@ -65,30 +67,8 @@ const Header = (props: any) => {
             </Typography>
           </Box>
 
-          {/* Right part: Search bar, Notifications, Profile */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* Search Bar with Search Icon */}
-            <TextField
-              sx={{
-                flexGrow: 1,
-                marginLeft: 2,
-                marginRight: 2,
-                maxWidth: 400,
-                backgroundColor: 'white', // Set background to white
-              }}
-              variant="outlined"
-              size="small"
-              value={searchValue}
-              onChange={handleSearchChange}
-              placeholder="Search here"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+          {/* Right part: Theme toggle, Notifications, Profile */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 
             {/* Notifications Icon */}
             <IconButton color="inherit" aria-label="notifications">
@@ -96,14 +76,20 @@ const Header = (props: any) => {
                 <NotificationsIcon sx={{ color: 'text.primary' }} />
               </Badge>
             </IconButton>
-
+            <IconButton
+              onClick={handleThemeToggle}
+              aria-label="Toggle theme"
+              sx={{
+                color: 'text.primary',
+                '&:hover': { backgroundColor: 'action.hover' }
+              }}
+            >
+              {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
             {/* User Profile */}
-            <Box sx={{ display: 'flex', alignItems: 'center', marginLeft: 2 }}>
-              {/* Avatar */}
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
               <Avatar sx={{ width: 35, height: 35 }} src="https://www.w3schools.com/w3images/avatar2.png" />
-
-              {/* Name and Email */}
-              <Box sx={{ marginLeft: 1 }}>
+              <Box sx={{ ml: 1 }}>
                 <Typography variant="body2" sx={{ fontSize: "14px", color: 'text.primary' }}>
                   {name}
                 </Typography>
@@ -111,20 +97,16 @@ const Header = (props: any) => {
                   {email}
                 </Typography>
               </Box>
-
-              {/* Dropdown Icon */}
               <IconButton
-                color="inherit"
                 onClick={handleProfileMenuOpen}
                 aria-controls="profile-menu"
                 aria-haspopup="true"
-                sx={{ marginLeft: 1 }}
+                sx={{ ml: 0.5 }}
               >
                 <ExpandMoreIcon sx={{ color: 'text.secondary' }} />
               </IconButton>
             </Box>
 
-            {/* Profile Menu Dropdown */}
             <Menu
               id="profile-menu"
               anchorEl={anchorEl}

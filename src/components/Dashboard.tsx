@@ -13,7 +13,8 @@ import {
   ListItemText,
   Select, MenuItem, FormControl,
   useTheme, useMediaQuery,
-  // Container,
+  alpha,
+  IconButton,
 } from '@mui/material';
 import { Types } from 'mongoose';
 import CampaignPerformanceChart from './Charts/CampaignPerformanceChart';
@@ -24,55 +25,20 @@ import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../src/redux/hooks';
 import { fetchDashboardData } from '../../src/redux/slices/dashboardSlice';
 import { TotalAudience, ScheduledCampaigns, ActiveCampaigns } from 'types/dashboard';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { ThemeToggleButton } from '../design/theme';
+// import { useThemeMode } from '../hooks/useThemeMode';
+import { useDesignSystem } from '../design/theme';
+import { DashboardContainer, SectionHeader, MetricCard, MetricHeader, MetricLabel, MetricValue, MetricTrend, TimeSelect, IconContainer, PrimaryButton, SecondaryButton, ActivityList, ActivityItem, ActivityIcon, ActivityTitle, ActivitySubtitle, ActivityTime } from '../design/components';
 
-const StyledButton = styled(Button)({
-  position: 'relative',
-  border: '1.5px solid #0057D9',
-  borderRadius: '6px',
-  display: 'block',
-  overflow: 'hidden',
-  transition: 'all 0.5s ease-out',
-  padding: 1,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: '-110%',
-    width: '110%',
-    height: '100%',
-    backgroundColor: '#0057D9',
-    borderRadius: '0 15px 15px 0',
-    transition: 'left 0.5s ease-out'
-  },
-  '&:hover': {
-    backgroundColor: 'transparent',
-    '& .MuiTypography-root': {
-      color: '#fff  '
-    },
-    '&::before': {
-      left: 0
-    }
-  },
-});
-
-const StyledText = styled(Typography)({
-  position: 'relative',
-  lineHeight: '30px',
-  color: '#0057D9  ',
-  transition: 'all 0.6s ease-out',
-  zIndex: 2,
-});
-
-interface DashboardProps {
-
-}
+interface DashboardProps {}
 
 type AudienceKey = keyof TotalAudience;
 type ScheduledKey = keyof ScheduledCampaigns;
 type ActiveKey = keyof ActiveCampaigns;
 
 const Dashboard: React.FC<DashboardProps> = () => {
-
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeDropdownOption, setActiveDropdownOption] = useState<ActiveKey>("weekly");
@@ -80,100 +46,43 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [audienceDropdownOption, setaudienceDropdownOption] = useState<AudienceKey>("monthly");
   const dispatch = useAppDispatch();
   const navigation = useNavigate();
-  //demo api response
-  const campaignResponses: Array<{
-    activeCampaigns: number;
-    scheduledCampaigns: number;
-    totalAudience: number;
-    emailsSent: {
-      daily: number;
-      weekly: number;
-      monthly: number;
-    };
-    engagementMetrics: {
-      openRate: string;
-      clickRate: string;
-    };
-    recentActivity: Array<{
-      id: Types.ObjectId;
-      type: string;
-      user: string;
-      details: string;
-      timeAgo: string;
-    }>;
-  }> = [
+  const mode = useSelector((state: RootState) => state.theme.mode);
 
-      {
-        activeCampaigns: 40,
-        scheduledCampaigns: 12,
-        totalAudience: 30500,
-        emailsSent: {
-          daily: 1000,
-          weekly: 7000,
-          monthly: 30000
-        },
-        engagementMetrics: {
-          openRate: "75%",
-          clickRate: "12%"
-        },
-        recentActivity: [
-          {
-            id: new Types.ObjectId("65f8e3c5a9b7d1a8f4e52345"),
-            type: "New Campaign",
-            user: "Michael Scott",
-            details: "Created 'Spring Super Sale 2025'",
-            timeAgo: "5m ago"
-          },
-          {
-            id: new Types.ObjectId("65f8e3c5a9b7d1a8f4e52346"),
-            type: "New Campaign",
-            user: "Michael Scott",
-            details: "Created 'Spring Super Sale 2025'",
-            timeAgo: "5m ago"
-          },
-        ]
-      },
-
-    ];
-  console.log(campaignResponses[0].activeCampaigns);
+  const ds = useDesignSystem(mode);
 
   function timeAgo(date: number) {
     const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-
     const units = [
-      { label: 'month', seconds: 2592000 },  // 30*24*60*60
-      { label: 'week', seconds: 604800 },    // 7*24*60*60
-      { label: 'day', seconds: 86400 },      // 24*60*60
+      { label: 'month', seconds: 2592000 },
+      { label: 'week', seconds: 604800 },
+      { label: 'day', seconds: 86400 },
       { label: 'hour', seconds: 3600 },
       { label: 'minute', seconds: 60 },
       { label: 'second', seconds: 1 }
     ];
-
     for (const unit of units) {
       const value = Math.floor(seconds / unit.seconds);
       if (value >= 1) {
         return `${value} ${unit.label}${value !== 1 ? 's' : ''} ago`;
       }
     }
-
     return 'just now';
   }
 
   useEffect(() => {  
-      dispatch(setSelectedCampaignData({
-        _id:'',
-        name: '',
-        type: '',
-        audience: null,
-        template: null,
-        schedule: null,
-        status: 'Draft',
-        openRate: 0,
-        ctr: 0,
-        delivered: 0,
-      }));      
-}, []);
- 
+    dispatch(setSelectedCampaignData({
+      _id:'',
+      name: '',
+      type: '',
+      audience: null,
+      template: null,
+      schedule: null,
+      status: 'Draft',
+      openRate: 0,
+      ctr: 0,
+      delivered: 0,
+    }));      
+  }, []);
 
   const { data, loading, error } = useSelector((state: RootState) => state.dashboard);
 
@@ -187,177 +96,261 @@ const Dashboard: React.FC<DashboardProps> = () => {
     fetchData();
   }, [dispatch]);
 
+  if (loading) return (
+    <DashboardContainer mode={mode} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography sx={{ color: ds.colors.textSecondary }}>Loading dashboard...</Typography>
+    </DashboardContainer>
+  );
+  
+  if (error) return (
+    <DashboardContainer mode={mode} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography sx={{ color: '#DC2626' }}>Error: {error}</Typography>
+    </DashboardContainer>
+  );
 
-  if (loading) return <p>Loading dashboard...</p>;
-  if (error) return <p>Error: {error}</p>;
   return (
-    <Box sx={{
-      p: 3, bgcolor: '#F8F9FE', maxWidth: '100%', overflow: 'hidden',
-      // '& *': { color: '#495057' }
-    }}>
-
-      <Box
-        display="flex"
-        flexDirection={{ xs: 'column', md: 'row' }}
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4" component="h1" sx={{ mb: 1, mr: 1 }} >
-          Dashboard
-        </Typography>
-
-        <Box display="flex"
-          flexDirection={{ xs: 'column', sm: 'row' }}
-          sx={{ gap: { xs: 1, sm: 1 } }}>
-          <StyledButton variant="outlined" sx={{ mr: 2, p: 1 }}>
-            <StyledText variant="button">
-              View&nbsp;Reports
-            </StyledText>
-          </StyledButton>
-
-          <StyledButton variant="outlined" sx={{ mr: 2, p: 1 }} onClick={() => navigation('/templates')}>
-            <StyledText variant="button" >
-              Manage&nbsp;Templates
-            </StyledText>
-          </StyledButton>
-          <Button onClick={() => navigation('/create-campaign')} variant="contained" sx={{ minWidth: '180px', bgcolor: '#0057D9', color: '#fff  ', p: 1, ":hover": { bgcolor: '#2068d5' } }}>
-            + Create&nbsp;Campaign
-          </Button>
+    <DashboardContainer mode={mode}>
+      {/* Header Section with Theme Toggle */}
+      <SectionHeader mode={mode}>
+        <Box>
+          <Typography 
+            sx={{ 
+              fontSize: ds.typography.scale.h1.fontSize,
+              fontWeight: ds.typography.scale.h1.fontWeight,
+              color: ds.colors.textPrimary,
+              letterSpacing: '-0.02em',
+              mb: 1,
+              lineHeight: ds.typography.scale.h1.lineHeight,
+            }}
+          >
+            Dashboard
+          </Typography>
+          <Typography 
+            sx={{ 
+              color: ds.colors.textSecondary,
+              fontSize: ds.typography.scale.body2.fontSize,
+              lineHeight: ds.typography.scale.body2.lineHeight,
+            }}
+          >
+            Overview of your marketing performance
+          </Typography>
         </Box>
-      </Box>
 
-      {/* KPI Cards */}
-      <Grid container spacing={3} mb={3}>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Box 
+            display="flex" 
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            sx={{ gap: { xs: 1, sm: 2 } }}
+          >
+            <SecondaryButton mode={mode} onClick={() => navigation('/templates')}>
+              Manage Templates
+            </SecondaryButton>
+            <SecondaryButton mode={mode}>
+              View Reports
+            </SecondaryButton>
+            <PrimaryButton mode={mode} onClick={() => navigation('/create-campaign')}>
+              + Create Campaign
+            </PrimaryButton>
+          </Box>
+        </Box>
+      </SectionHeader>
+
+      {/* Metrics Grid */}
+      <Grid container spacing={3} mb={4}>
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
+          <MetricCard mode={mode}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ m: 1 }} component="img" src={`${process.env.PUBLIC_URL}/icons/active_campaigns.png`} alt="Active Campaigns Icon" />
-
-                <FormControl sx={{ width: 100 }}>
-                  <Select
+              <MetricHeader>
+                <IconContainer mode={mode} color="primary">
+                  <Box component="img" 
+                    src={`${process.env.PUBLIC_URL}/icons/active_campaigns.png`} 
+                    alt="Active Campaigns Icon"
+                    sx={{ width: 24, height: 24, filter: 'brightness(0) invert(1)' }}
+                  />
+                </IconContainer>
+                <FormControl size="small">
+                  <TimeSelect
+                    mode={mode}
                     value={activeDropdownOption}
                     onChange={(e) => setActiveDropdownOption(e.target.value as ActiveKey)}
-                    sx={{ fontSize: 10, height: 30, color: '#495057', }}
                   >
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="daily">Daily</MenuItem>
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="weekly">Weekly</MenuItem>
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="monthly">Monthly</MenuItem>
-                  </Select>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="daily">Daily</MenuItem>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="weekly">Weekly</MenuItem>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="monthly">Monthly</MenuItem>
+                  </TimeSelect>
                 </FormControl>
-              </Box>
-              <Typography color='#495057' fontSize={'14px'} pb={1} pt={1} >Active Campaigns</Typography>
-              <Box display="flex" justifyContent={'space-between'} alignItems={'center'}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{data?.activeCampaigns?.daily?.count}</Typography>
-                <Typography variant="body2" color="#2B8A3E" bgcolor="#ECFDF3" display={'inline'} border="1px solid #D3F9D8" borderRadius='6px' p={'4px'} >
-                  ↑ 12%
-                </Typography>
+              </MetricHeader>
+              <MetricLabel mode={mode}>Active Campaigns</MetricLabel>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-end" mt={2}>
+                <MetricValue mode={mode}>{data?.activeCampaigns?.daily?.count}</MetricValue>
+                <MetricTrend mode={mode}>12%</MetricTrend>
               </Box>
             </CardContent>
-          </Card>
+          </MetricCard>
         </Grid>
+
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
+          <MetricCard mode={mode}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ m: 1 }} component="img" src={`${process.env.PUBLIC_URL}/icons/schedule_campaigns.png`} alt="Active Campaigns Icon" />
-                <FormControl sx={{ width: 100 }}>
-                  <Select
+              <MetricHeader>
+                <IconContainer mode={mode} color="secondary">
+                  <Box component="img" 
+                    src={`${process.env.PUBLIC_URL}/icons/schedule_campaigns.png`} 
+                    alt="Scheduled Campaigns Icon"
+                    sx={{ width: 24, height: 24, filter: 'brightness(0) invert(1)' }}
+                  />
+                </IconContainer>
+                <FormControl size="small">
+                  <TimeSelect
+                    mode={mode}
                     value={scheduleDropdownOption}
                     onChange={(e) => setScheduleDropdownOption(e.target.value as ScheduledKey)}
-                    sx={{ fontSize: 10, height: 30, color: '#495057' }}
                   >
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="daily">Daily</MenuItem>
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="weekly">Weekly</MenuItem>
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="monthly">Monthly</MenuItem>
-                  </Select>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="daily">Daily</MenuItem>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="weekly">Weekly</MenuItem>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="monthly">Monthly</MenuItem>
+                  </TimeSelect>
                 </FormControl>
-              </Box>
-              <Typography color='#495057' fontSize={'14px'} pb={1} pt={1} >Scheduled Campaigns</Typography>
-              <Box display="flex" justifyContent={'space-between'} alignItems={'center'}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{data?.scheduledCampaigns?.[scheduleDropdownOption]?.count}</Typography>
-                <Typography variant="body2" color="#2B8A3E" bgcolor="#ECFDF3" display={'inline'} border="1px solid #D3F9D8" borderRadius='6px' p={'4px'} >
-                  ↑ 8%
-                </Typography>
+              </MetricHeader>
+              <MetricLabel mode={mode}>Scheduled Campaigns</MetricLabel>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-end" mt={2}>
+                <MetricValue mode={mode}>{data?.scheduledCampaigns?.[scheduleDropdownOption]?.count}</MetricValue>
+                <MetricTrend mode={mode}>8%</MetricTrend>
               </Box>
             </CardContent>
-          </Card>
+          </MetricCard>
         </Grid>
+
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
+          <MetricCard mode={mode}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ m: 1 }} component="img" src={`${process.env.PUBLIC_URL}/icons/total_audience.png`} alt="Active Campaigns Icon" />
-                <FormControl sx={{ width: 100 }}>
-                  <Select
+              <MetricHeader>
+                <IconContainer mode={mode} color="accent">
+                  <Box component="img" 
+                    src={`${process.env.PUBLIC_URL}/icons/total_audience.png`} 
+                    alt="Total Audience Icon"
+                    sx={{ width: 24, height: 24, filter: 'brightness(0) invert(1)' }}
+                  />
+                </IconContainer>
+                <FormControl size="small">
+                  <TimeSelect
+                    mode={mode}
                     value={audienceDropdownOption}
                     onChange={(e) => setaudienceDropdownOption(e.target.value as AudienceKey)}
-                    sx={{ fontSize: 10, height: 30, color: '#495057' }}
                   >
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="daily">Daily</MenuItem>
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="weekly">Weekly</MenuItem>
-                    <MenuItem sx={{ fontSize: 10, color: '#495057' }} value="monthly">Monthly</MenuItem>
-                  </Select>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="daily">Daily</MenuItem>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="weekly">Weekly</MenuItem>
+                    <MenuItem sx={{ fontSize: ds.typography.scale.caption.fontSize }} value="monthly">Monthly</MenuItem>
+                  </TimeSelect>
                 </FormControl>
-              </Box>
-              <Typography color='#495057' fontSize={'14px'} pb={1} pt={1} >Total Audience</Typography>
-              <Box display="flex" justifyContent={'space-between'} alignItems={'center'}>
-                <Typography variant="h4" sx={{ color: 'black  ', fontWeight: 'bold' }}>{data?.totalAudience?.[audienceDropdownOption]?.count ?? 'NA'}</Typography>
-                <Typography variant="body2" color="#2B8A3E" bgcolor="#ECFDF3" border="1px solid #D3F9D8" borderRadius='6px' display={'inline'} p={'4px'} >
-                  ↑ 12%
-                </Typography>
+              </MetricHeader>
+              <MetricLabel mode={mode}>Total Audience</MetricLabel>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-end" mt={2}>
+                <MetricValue mode={mode}>{data?.totalAudience?.[audienceDropdownOption]?.count ?? 'NA'}</MetricValue>
+                <MetricTrend mode={mode}>12%</MetricTrend>
               </Box>
             </CardContent>
-          </Card>
+          </MetricCard>
         </Grid>
       </Grid>
 
-
+      {/* Main Content Area */}
       <Grid container spacing={3}>
-        {/* Main Content */}
+        {/* Charts Section */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
-
-              <EmailSent data={data?.emailsSent?.monthlyStats} />
-
+              <Box 
+                sx={{ 
+                  backgroundColor: ds.colors.surface,
+                  borderRadius: ds.effects.borderRadius.md,
+                  border: `1px solid ${ds.colors.border}`,
+                  padding: 3,
+                  height: '100%',
+                  boxShadow: ds.effects.shadows.default,
+                }}
+              >
+                <Typography 
+                  sx={{ 
+                    fontSize: ds.typography.scale.h4.fontSize,
+                    fontWeight: ds.typography.scale.h4.fontWeight,
+                    color: ds.colors.textPrimary,
+                    mb: 3,
+                    lineHeight: ds.typography.scale.h4.lineHeight,
+                  }}
+                >
+                  Email Performance
+                </Typography>
+                <EmailSent data={data?.emailsSent?.monthlyStats} />
+              </Box>
             </Grid>
             <Grid size={{ xs: 12 }}>
-
-              <CampaignPerformanceChart stats={data?.emailsSent?.monthlyStats} />
-
+              <Box 
+                sx={{ 
+                  backgroundColor: ds.colors.surface,
+                  borderRadius: ds.effects.borderRadius.md,
+                  border: `1px solid ${ds.colors.border}`,
+                  padding: 3,
+                  height: '100%',
+                  boxShadow: ds.effects.shadows.default,
+                }}
+              >
+                <Typography 
+                  sx={{ 
+                    fontSize: ds.typography.scale.h4.fontSize,
+                    fontWeight: ds.typography.scale.h4.fontWeight,
+                    color: ds.colors.textPrimary,
+                    mb: 3,
+                    lineHeight: ds.typography.scale.h4.lineHeight,
+                  }}
+                >
+                  Campaign Engagement
+                </Typography>
+                <CampaignPerformanceChart stats={data?.emailsSent?.monthlyStats} />
+              </Box>
             </Grid>
           </Grid>
         </Grid>
 
-        {/* Recent Activity Sidebar (Responsive) */}
-        <Grid size={{ xs: 12, md: 4 }} sx={{ order: isMobile ? 1 : "unset" }}>
-
-          <Card sx={{ borderRadius: 2 }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>
-                Recent Activity
-              </Typography>
-              <List>
-                {data?.recentActivity.map((activity) => (
-                  <ListItem key={activity._id.toString()} sx={{ alignItems: "flex-start", padding: { xs: 1, md: 2 }, minHeight: { xs: 'auto', md: '64px' }, }}>
-
-                    <Box component="img" src={`${process.env.PUBLIC_URL}/icons/recent_activity.png`} alt="Activity Icon" sx={{ width: 24, height: 24, mr: { xs: 1, md: 2 }, flexShrink: 0 }} />
-
-                    <ListItemText
-                      primary={activity.name}
-                      secondary={`Michael Scott created ${activity.name} - ${timeAgo(activity.createdAt).toString()}`}
-                      sx={{ margin: 0 }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
+        {/* Recent Activity Sidebar */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Box sx={{ position: 'sticky', top: 24 }}>
+            <Typography 
+              sx={{ 
+                fontSize: ds.typography.scale.h4.fontSize,
+                fontWeight: ds.typography.scale.h4.fontWeight,
+                color: ds.colors.textPrimary,
+                mb: 2,
+                pl: 2,
+                lineHeight: ds.typography.scale.h4.lineHeight,
+              }}
+            >
+              Recent Activity
+            </Typography>
+            <ActivityList mode={mode}>
+              {data?.recentActivity.map((activity) => (
+                <ActivityItem key={activity._id.toString()}>
+                  <ActivityIcon mode={mode}>
+                    <Box component="span" sx={{ fontSize: '16px' }}>↗</Box>
+                  </ActivityIcon>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <ActivityTitle mode={mode}>
+                      {activity.name}
+                    </ActivityTitle>
+                    <ActivitySubtitle mode={mode}>
+                      Michael Scott created {activity.name}
+                    </ActivitySubtitle>
+                  </Box>
+                  <ActivityTime mode={mode}>
+                    {timeAgo(activity.createdAt)}
+                  </ActivityTime>
+                </ActivityItem>
+              ))}
+            </ActivityList>
+          </Box>
         </Grid>
       </Grid>
-    </Box>
+    </DashboardContainer>
   );
 };
 

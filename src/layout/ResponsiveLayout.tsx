@@ -15,6 +15,12 @@ import {
 
 } from "@mui/material";
 // import { Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { RootState } from 'redux/store'; // Import your RootState
+import { useAppDispatch } from '../../src/redux/hooks';
+import { toggleTheme } from '../../src/redux/slices/themeSlice';
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SearchIcon from '@mui/icons-material/Search';
@@ -29,11 +35,12 @@ const ResponsiveLayout: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
 
   const [notifications, setNotifications] = useState(); // Default notification count
+  const mode = useSelector((state: RootState) => state.theme.mode);
 
   // State for name and email
   const [name, setName] = useState('Michael Scott');
   const [email, setEmail] = useState('michael.s@email.com');
-
+  const dispatch = useAppDispatch();
   const handleSearchChange = (e: any) => {
     setSearchValue(e.target.value);
   };
@@ -42,6 +49,9 @@ const ResponsiveLayout: React.FC = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleThemeToggle = () => {
+    dispatch(toggleTheme());
+  };
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
@@ -117,7 +127,16 @@ const ResponsiveLayout: React.FC = () => {
                   ),
                 }}
               />
-
+<IconButton
+              onClick={handleThemeToggle}
+              aria-label="Toggle theme"
+              sx={{
+                color: 'text.primary',
+                '&:hover': { backgroundColor: 'action.hover' }
+              }}
+            >
+              {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
               {/* Notifications Icon */}
               <IconButton color="inherit" aria-label="notifications">
                 <Badge badgeContent={notifications} color="error">
