@@ -12,36 +12,32 @@ import {
   InputAdornment,
   Avatar,
   Badge,
-
+  styled,
 } from "@mui/material";
-// import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import { RootState } from 'redux/store'; // Import your RootState
+import { RootState } from 'redux/store';
 import { useAppDispatch } from '../../src/redux/hooks';
 import { toggleTheme } from '../../src/redux/slices/themeSlice';
-
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SearchIcon from '@mui/icons-material/Search';
-// import ExpandMoreIcon from '@mui/icons-material/ArrowDropDown';
 import MenuIcon from "@mui/icons-material/Menu";
 import Sidebar from "./Sidebar";
+import { DESIGN_SYSTEM } from "design/theme";
+import { ThemeContainer, ThemeAppBar, ThemeTextField, LogoContainer, LogoText, UserInfo, WelcomeText, ActionIconButton } from "design/componentTheme/ResponsiveLayoutTheme";
 
 const drawerWidth: number = 240;
-
 const ResponsiveLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-
-  const [notifications, setNotifications] = useState(); // Default notification count
+  const [notifications] = useState(0);
+  
+  // Get theme from Redux
   const mode = useSelector((state: RootState) => state.theme.mode);
-
-  // State for name and email
-  const [name, setName] = useState('Michael Scott');
-  const [email, setEmail] = useState('michael.s@email.com');
   const dispatch = useAppDispatch();
-  const handleSearchChange = (e: any) => {
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchValue(e.target.value);
   };
 
@@ -52,68 +48,85 @@ const ResponsiveLayout: React.FC = () => {
   const handleThemeToggle = () => {
     dispatch(toggleTheme());
   };
+
   return (
-    <Box sx={{ display: "flex" }}>
+    <ThemeContainer mode={mode}>
       <CssBaseline />
 
       {/* Topbar */}
-      <AppBar
+      <ThemeAppBar
         position="fixed"
+        mode={mode}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer - 1,
-          bgcolor: "#fff",
-          color: "#000",
-          // width: { sm: `calc(100% - ${drawerWidth}px)` },
           width: { sm: `100%` },
         }}
       >
-        <Toolbar>
-          <Box sx={{ display: { md: 'none' } }}>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 1 }}
-            >
-              <MenuIcon />
-            </IconButton>
+        <Toolbar sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '0 16px',
+        }}>
+          {/* Left section: Logo and Mobile Menu */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Hidden mdUp>
+              <ActionIconButton
+                color="inherit"
+                edge="start"
+                onClick={handleDrawerToggle}
+                mode={mode}
+              >
+                <MenuIcon />
+              </ActionIconButton>
+            </Hidden>
+
+            <LogoContainer>
+              <Box 
+                component="img" 
+                src={`${process.env.PUBLIC_URL}/icons/logo.png`} 
+                alt="Mailstorm" 
+                sx={{ 
+                  width: 'auto', 
+                  height: '35px',
+                  filter: mode === 'dark' ? 'brightness(0) invert(1)' : 'none',
+                }} 
+              />
+              <LogoText mode={mode}>
+                Mailstorm
+              </LogoText>
+            </LogoContainer>
           </Box>
 
-          <Box component="img" src={`${process.env.PUBLIC_URL}/icons/logo.png`} alt="Mailstorm" width={'auto'} height={'35px'} /> 
-          <Typography
-            sx={{
-              fontWeight: 800,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "#1A1A1A",           
-              marginLeft: "4px",
-            }}
-          >
-            Mailstorm
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 2, }}>
-            <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
-              <Box sx={{ ml: 9, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" sx={{ fontSize: "16px", color: 'text.secondary' }}>
-                  Welcome, {name}!
-                </Typography>
-                <Typography variant="body2" sx={{ fontSize: "16px", color: 'text.primary' }}>
-                  Ready to Boost Your Campaign
-                </Typography>
-              </Box>
-            </Box>
-            <Box></Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-
-              {/* Search Bar with Search Icon */}
-              <TextField
-                sx={{
-                  flexGrow: 1,
-                  marginLeft: 2,
-                  marginRight: 2,
-                  maxWidth: 400,
-                  backgroundColor: 'white',
+          {/* Center section: Welcome message (desktop only) */}
+          <Hidden mdDown>
+            <Box sx={{ ml: 9 }}>
+              <WelcomeText mode={mode}>
+                Welcome, Michael Scott!
+              </WelcomeText>
+              <Typography 
+                sx={{ 
+                  fontSize: DESIGN_SYSTEM.typography.scale.body2.fontSize,
+                  color: DESIGN_SYSTEM.modes[mode].colors.textPrimary,
+                  fontWeight: 500,
                 }}
+              >
+                Ready to Boost Your Campaign
+              </Typography>
+            </Box>
+          </Hidden>
+
+          {/* Right section: Search, Theme Toggle, Notifications, Profile */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2,
+            flex: 1,
+            justifyContent: 'flex-end',
+          }}>
+            {/* Search Bar */}
+            <Hidden smDown>
+              <ThemeTextField
+                mode={mode}
                 variant="outlined"
                 size="small"
                 value={searchValue}
@@ -122,51 +135,86 @@ const ResponsiveLayout: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon />
+                      <SearchIcon sx={{ color: DESIGN_SYSTEM.modes[mode].colors.textSecondary }} />
                     </InputAdornment>
                   ),
                 }}
+                sx={{
+                  width: { md: '200px', lg: '300px' },
+                  flexShrink: 0,
+                }}
               />
-<IconButton
+            </Hidden>
+
+            {/* Theme Toggle Button */}
+            <ActionIconButton
               onClick={handleThemeToggle}
               aria-label="Toggle theme"
+              mode={mode}
               sx={{
-                color: 'text.primary',
-                '&:hover': { backgroundColor: 'action.hover' }
+                backgroundColor: DESIGN_SYSTEM.modes[mode].colors.hover,
+                '&:hover': {
+                  backgroundColor: DESIGN_SYSTEM.modes[mode].colors.primary,
+                  color: '#fff',
+                },
               }}
             >
               {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-              {/* Notifications Icon */}
-              <IconButton color="inherit" aria-label="notifications">
-                <Badge badgeContent={notifications} color="error">
-                  <NotificationsIcon sx={{ color: 'text.primary' }} />
-                </Badge>
-              </IconButton>
+            </ActionIconButton>
 
-              {/* User Profile */}
-              <Box sx={{ display: 'flex', alignItems: 'center', marginLeft: 2 }}>
-                {/* Avatar */}
-                <Avatar sx={{ width: 35, height: 35 }} src="https://www.w3schools.com/w3images/avatar2.png" />
+            {/* Notifications Icon */}
+            <ActionIconButton color="inherit" aria-label="notifications" mode={mode}>
+              <Badge 
+                badgeContent={notifications} 
+                color="error"
+                sx={{
+                  '& .MuiBadge-badge': {
+                    backgroundColor: DESIGN_SYSTEM.modes[mode].colors.accent,
+                  }
+                }}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </ActionIconButton>
 
-                {/* Name and Email */}
-                <Box sx={{ marginLeft: 1, display: { xs: 'none', md: "block" } }}>
-                  <Typography variant="body2" sx={{ fontSize: "14px", color: 'text.primary' }}>
-                    {name}
+            {/* User Profile */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              ml: { xs: 0, sm: 1 } 
+            }}>
+              <Avatar 
+                sx={{ 
+                  width: 35, 
+                  height: 35,
+                  border: `2px solid ${DESIGN_SYSTEM.modes[mode].colors.border}`,
+                }} 
+                src="https://www.w3schools.com/w3images/avatar2.png" 
+              />
+              
+              <Hidden smDown>
+                <UserInfo mode={mode}>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    Michael Scott
                   </Typography>
-                  <Typography variant="body2" sx={{ fontSize: "14px", color: 'text.secondary' }}>
-                    {email}
+                  <Typography variant="body2">
+                    michael.s@email.com
                   </Typography>
-                </Box>
-              </Box>
+                </UserInfo>
+              </Hidden>
             </Box>
           </Box>
         </Toolbar>
-      </AppBar>
+      </ThemeAppBar>
 
       {/* Desktop Sidebar */}
       <Hidden mdDown>
-        <Sidebar drawerWidth={drawerWidth} mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} />
+        <Sidebar 
+          drawerWidth={drawerWidth} 
+          mobileOpen={mobileOpen} 
+          handleDrawerToggle={handleDrawerToggle}
+          mode={mode}
+        />
       </Hidden>
 
       {/* Mobile Sidebar */}
@@ -180,29 +228,40 @@ const ResponsiveLayout: React.FC = () => {
             [`& .MuiDrawer-paper`]: {
               width: drawerWidth,
               boxSizing: "border-box",
+              backgroundColor: DESIGN_SYSTEM.modes[mode].colors.surface,
+              borderRight: `1px solid ${DESIGN_SYSTEM.modes[mode].colors.border}`,
             },
           }}
         >
-          <Sidebar drawerWidth={drawerWidth} mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} />
+          <Sidebar 
+            drawerWidth={drawerWidth} 
+            mobileOpen={mobileOpen} 
+            handleDrawerToggle={handleDrawerToggle}
+            mode={mode}
+          />
         </Drawer>
       </Hidden>
 
-      {/* <Box
+      {/* Main Content Area */}
+      {/* Uncomment when you have content */}
+      {/* 
+      <Box
         component="main"
         sx={{
           flexGrow: 1,
-          // bgcolor: 'red',
-          bgcolor: 'background.default',
-          p: 1,
+          backgroundColor: DESIGN_SYSTEM.modes[mode].colors.background,
+          p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          marginTop: '20px', // Adjust this based on AppBar height
-          minHeight: '100vh',
+          marginTop: '64px', // AppBar height
+          minHeight: 'calc(100vh - 64px)',
+          transition: 'background-color 0.3s ease',
         }}
       >
-        <Toolbar />
+        <Toolbar /> 
         <Outlet />
-      </Box> */}
-    </Box>
+      </Box>
+      */}
+    </ThemeContainer>
   );
 };
 
