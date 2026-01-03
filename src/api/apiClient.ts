@@ -17,9 +17,11 @@ console.log("API BASE:", apiClient.defaults.baseURL);
 //     return Promise.reject(error);
 //   }
 // );
-export const getAudienceEstimate = (payload: any) =>
-  apiClient.post("/audience/estimate", payload);
-
+export const getAudienceEstimate = async(payload: any) =>  {
+  const res = await apiClient.post(`${process.env.REACT_APP_API_BASE_URL}/audience/estimate`, payload);
+  console.log("///////// Audience Estimate Response:", res.data.count);
+  return res.data.count;
+}
 
 export const fetchDashboardStats = async () => {
   const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/dashboard`);

@@ -13,7 +13,7 @@ import {
 import { RootState } from '../../redux/store';
 import { useAppDispatch } from '../../redux/hooks';
 import CustomPreview from "../../components/Templates/CustomPreview";
-import AllModal from '../../components/Modals/DeleteModal';
+import AllModal from '../Modals/AllModal';
 import LoopIcon from '@mui/icons-material/Loop';
 import CryptoJS from 'crypto-js'
 export default function EmailTemplateGallery() {

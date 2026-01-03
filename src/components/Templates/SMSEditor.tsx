@@ -29,7 +29,7 @@ import { useAppDispatch } from '../../redux/hooks'
 import { createTemplateThunk, getTemplateById, updateTemplate } from "../../redux/slices/templateSlice";
 import { Template } from 'types/template';
 import CloseIcon from '@mui/icons-material/Close';
-import AllModal from '../Modals/DeleteModal';
+import AllModal from '../Modals/AllModal';
 import { useSelector } from "react-redux";
 import Loader from '../../components/Modals/Loader';
 

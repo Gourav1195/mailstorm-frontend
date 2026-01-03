@@ -3,7 +3,7 @@ import {Button, Dialog, } from '@mui/material'
 import { Template } from 'types/template';
 import { useAppDispatch } from "../../../../redux/hooks";
 import { createTemplateThunk, updateTemplate } from "../../../../redux/slices/templateSlice";
-import AllModal from "../../../../components/Modals/DeleteModal";
+import AllModal from "../../../Modals/AllModal";
 import { useNavigate } from "react-router-dom";
 import TestEmailPopUp from "./TestEmailPopUp";
 import ClipLoader from "react-spinners/ClipLoader";

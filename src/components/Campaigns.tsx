@@ -4,12 +4,12 @@ import { loadCampaigns, pauseResumeCampaign, duplicateCampaign, deleteCampaign }
 import { RootState } from "../redux/store";
 import {
   Table, TableBody, TableCell, TableHead, TableRow, Button, Typography, MenuItem, IconButton, TableContainer, Paper,
-  Box, useMediaQuery, useTheme, FormControl, InputLabel, Select, InputBase, Container, Alert, Snackbar,
-  SelectChangeEvent,
+  Box, useMediaQuery, FormControl, InputLabel, Select, InputBase, Container, Alert, Snackbar,
+  SelectChangeEvent, Chip, Avatar, Badge, Tooltip, Card, alpha,
+  TextField,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-// import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../redux/hooks";
@@ -20,22 +20,28 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SearchIcon from "@mui/icons-material/Search";
-import DeleteConfirmationModal from "./Modals/DeleteModal";
-import
-// dayjs, 
-{ Dayjs } from 'dayjs';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AddIcon from '@mui/icons-material/Add';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import DeleteConfirmationModal from "./Modals/AllModal";
+import { Dayjs } from 'dayjs';
 import CryptoJS from "crypto-js";
 import EmptyCampaign from "./CampaignWizard/EmptyCampaign";
 import { updateCampaignList } from '../redux/slices/campaignSlice';
 import { getFakeId } from "../utils/getFakeId";
 import { setSelectedCampaignData } from '../redux/slices/campaignSlice';
+import { useDesignSystem } from "../design/theme";
 
-interface CampaignProp {
-
-}
+interface CampaignProp {}
 
 const Campaigns: React.FC<CampaignProp> = () => {
-
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const designSystem = useDesignSystem(mode);
+  
   const [isEmptyCampaign, setIsEmptyCampaign] = useState(false);
   const [isDeleteModalopen, setIsDeleteModalopen] = useState(false);
   const { campaigns, loading, error, pagination } = useSelector((state: RootState) => state.campaign);
@@ -75,10 +81,10 @@ const Campaigns: React.FC<CampaignProp> = () => {
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [filters.search, filters.status, filters.type, filters.startDate, filters.endDate, filters.sortBy, filters.limit, filters.order, filters.page ,dispatch]);
+  }, [filters.search, filters.status, filters.type, filters.startDate, filters.endDate, filters.sortBy, filters.limit, filters.order, filters.page, dispatch]);
 
   useEffect(() => {
-    dispatch(loadCampaigns({ page: filters.page, limit: filters.limit })); // ✅ Fetch only paginated data
+    dispatch(loadCampaigns({ page: filters.page, limit: filters.limit }));
   }, [filters.page, filters.limit, dispatch]);
 
   const handleChange = (e: any) => {
@@ -86,19 +92,19 @@ const Campaigns: React.FC<CampaignProp> = () => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
   
-    useEffect(() => {  
-        dispatch(setSelectedCampaignData({
-          _id:'',
-          name: '',
-          type: '',
-          audience: null,
-          template: null,
-          schedule: null,
-          status: 'Draft',
-          openRate: 0,
-          ctr: 0,
-          delivered: 0,
-        }));      
+  useEffect(() => {  
+    dispatch(setSelectedCampaignData({
+      _id:'',
+      name: '',
+      type: '',
+      audience: null,
+      template: null,
+      schedule: null,
+      status: 'Draft',
+      openRate: 0,
+      ctr: 0,
+      delivered: 0,
+    }));      
   }, []);
 
   const nextPage = () => {
@@ -111,46 +117,46 @@ const Campaigns: React.FC<CampaignProp> = () => {
   };
 
   const computedSortValue = useMemo(() => {
-  if (filters.sortBy === 'name') {
-    return filters.order === 'asc' ? 'name_asc' : 'name_desc';
-  } else {
-    return filters.order === 'desc' ? 'newest' : 'oldest';
-  }
-}, [filters.sortBy, filters.order]);
+    if (filters.sortBy === 'name') {
+      return filters.order === 'asc' ? 'name_asc' : 'name_desc';
+    } else {
+      return filters.order === 'desc' ? 'newest' : 'oldest';
+    }
+  }, [filters.sortBy, filters.order]);
 
-const handleSortChange = (e: SelectChangeEvent<string>) => {
-  const selectedSort = e.target.value;
+  const handleSortChange = (e: SelectChangeEvent<string>) => {
+    const selectedSort = e.target.value;
 
-  if (selectedSort === "name_asc") {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy: "name",
-      order: "asc",
-      page: 1,
-    }));
-  } else if (selectedSort === "name_desc") {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy: "name",
-      order: "desc",
-      page: 1,
-    }));
-  } else if (selectedSort === "oldest") {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy: "createdAt",
-      order: "asc",
-      page: 1,
-    }));
-  } else {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy: "createdAt",
-      order: "desc",
-      page: 1,
-    }));
-  }
-};
+    if (selectedSort === "name_asc") {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "name",
+        order: "asc",
+        page: 1,
+      }));
+    } else if (selectedSort === "name_desc") {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "name",
+        order: "desc",
+        page: 1,
+      }));
+    } else if (selectedSort === "oldest") {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "createdAt",
+        order: "asc",
+        page: 1,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "createdAt",
+        order: "desc",
+        page: 1,
+      }));
+    }
+  };
 
   const prevPage = () => {
     if (filters.page > 1) {
@@ -181,19 +187,18 @@ const handleSortChange = (e: SelectChangeEvent<string>) => {
     setSelectedId(id);
     setIsDeleteModalopen(true);
   };
+
   const handleConfirmDelete = () => {
     if (selectedId) {
       dispatch(deleteCampaign(selectedId));
-      setAlertError('Campaign Has Been Deleted Successfully');
+      setAlertError('Campaign deleted successfully');
       setshowAlert(true);      
     }
     setIsDeleteModalopen(false);
   };
 
-  const theme = useTheme();
-
   const handleDuplicate = async (campaignId: string) => {
-    try{      
+    try {      
       const action = await dispatch(duplicateCampaign(campaignId));
 
       if (duplicateCampaign.fulfilled.match(action)) {
@@ -212,119 +217,314 @@ const handleSortChange = (e: SelectChangeEvent<string>) => {
         }
       }
       setTimeout(() => setHighlightedId(null), 8000);
-      setAlertError('Campaign Has Been Cloned Successfully');
+      setAlertError('Campaign cloned successfully');
       setshowAlert(true); 
     } catch (error) {
       console.error("Failed to clone campaign:", error);
     }
   };
 
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("lg"));
+  const isSmallScreen = useMediaQuery(`(max-width: 900px)`);
+
+  const getStatusColor = (status: string) => {
+    const colorMap: Record<string, { color: string; bg: string; icon?: string }> = {
+      'Active': { color: designSystem.colors.success, bg: designSystem.colors.successBg, icon: '▶️' },
+      'Paused': { color: designSystem.colors.warning, bg: designSystem.colors.warningBg, icon: '⏸️' },
+      'Completed': { color: designSystem.colors.primary, bg: designSystem.colors.primaryBg, icon: '✅' },
+      'Scheduled': { color: designSystem.colors.info, bg: designSystem.colors.infoBg, icon: '📅' },
+      'Draft': { color: designSystem.colors.textTertiary, bg: designSystem.colors.surfaceElevated, icon: '📝' },
+      'Expired': { color: designSystem.colors.error, bg: designSystem.colors.errorBg, icon: '⏰' },
+      'On Going': { color: designSystem.colors.success, bg: designSystem.colors.successBg, icon: '🔄' },
+      'Not Yet Started': { color: designSystem.colors.accent, bg: designSystem.colors.accentBg, icon: '⏳' },
+    };
+    return colorMap[status] || { color: designSystem.colors.textSecondary, bg: designSystem.colors.surfaceElevated };
+  };
+
+  const getTypeColor = (type: string) => {
+    return type === 'Real Time' ? designSystem.colors.success : 
+           type === 'Scheduled' ? designSystem.colors.primary : 
+           designSystem.colors.accent;
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
 
   if (error) return <Typography color="error">{error}</Typography>;
   if (filters.search === "" && filters.status === ""  && filters.type === "" && filters.startDate === null && filters.endDate === null && campaigns.length === 0) return <EmptyCampaign />;
 
   return (
-    <Container sx={{ py: 4, bgcolor: '#F8F9FE', maxWidth: { xs: '100%', }, }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Typography sx={{ fontSize: "26px", }} gutterBottom>
-          Manage Campaign
-        </Typography>
-        <Button variant="contained" onClick={() => navigation('/create-campaign')}
-          sx={{ bgcolor: '#0057D9', color: '#fff', fontSize: { xs: '12px', sm: '14px' }, p: 1, ":hover": { bgcolor: '#2068d5' } }}> +&nbsp;Create&nbsp;Campaign  </Button>
-      </Box>
-      <Snackbar
-        open={showAlert}
-        autoHideDuration={3000}
-        onClose={() => setshowAlert(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert severity="success" onClose={() => setshowAlert(false)} sx={{ width: '100%' }}>
-          {alertError}
-        </Alert>
-      </Snackbar>
-      <TableContainer component={Paper} ref={tableRef} sx={{ margin: '20px auto', pl: 2, pr: 2, borderRadius: '6px', overflow: 'x' }}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Container sx={{ 
+        py: 3, 
+        backgroundColor: designSystem.colors.background,
+        minHeight: '100vh',
+        maxWidth: { xs: '100%', lg: '100%' },
+      }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box>
+            <Typography variant="h4" sx={{ 
+              color: designSystem.colors.textPrimary,
+              fontWeight: 700,
+              mb: 0.5,
+              background: designSystem.colors.gradientPrimary,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              Campaign Dashboard
+            </Typography>
+            <Typography variant="body2" sx={{ color: designSystem.colors.textSecondary }}>
+              Manage and monitor your marketing campaigns
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigation('/create-campaign')}
+            sx={{
+              background: designSystem.colors.gradientPrimary,
+              borderRadius: designSystem.effects.borderRadius.lg,
+              fontWeight: 600,
+              textTransform: 'none',
+              px: 3,
+              py: 1,
+              '&:hover': {
+                opacity: 0.9,
+                transform: 'translateY(-1px)',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Create Campaign
+          </Button>
+        </Box>
 
-        {/* Filters */}
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Box sx={{
-            display: "flex", flexDirection: "row", gap: "10px", mt: 2,
-            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
+        {/* Stats Summary */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          <Card sx={{ 
+            p: 2, 
+            flex: 1, 
+            minWidth: 200,
+            backgroundColor: designSystem.colors.surface,
+            border: `1px solid ${designSystem.colors.border}`,
+            borderRadius: designSystem.effects.borderRadius.lg,
           }}>
+            <Typography variant="caption" sx={{ color: designSystem.colors.textTertiary, display: 'block', mb: 1 }}>
+              Total Campaigns
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography variant="h4" sx={{ color: designSystem.colors.textPrimary, fontWeight: 700 }}>
+                {pagination?.total || 0}
+              </Typography>
+              <Typography variant="caption" sx={{ color: designSystem.colors.success }}>
+                +12% this month
+              </Typography>
+            </Box>
+          </Card>
+          
+          <Card sx={{ 
+            p: 2, 
+            flex: 1, 
+            minWidth: 200,
+            backgroundColor: designSystem.colors.surface,
+            border: `1px solid ${designSystem.colors.border}`,
+            borderRadius: designSystem.effects.borderRadius.lg,
+          }}>
+            <Typography variant="caption" sx={{ color: designSystem.colors.textTertiary, display: 'block', mb: 1 }}>
+              Active Campaigns
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography variant="h4" sx={{ color: designSystem.colors.textPrimary, fontWeight: 700 }}>
+                {campaigns.filter(c => c.status === 'Active' || c.status === 'On Going').length}
+              </Typography>
+              <Typography variant="caption" sx={{ color: designSystem.colors.success }}>
+                {((campaigns.filter(c => c.status === 'Active' || c.status === 'On Going').length / campaigns.length) * 100).toFixed(0)}% of total
+              </Typography>
+            </Box>
+          </Card>
+          
+          <Card sx={{ 
+            p: 2, 
+            flex: 1, 
+            minWidth: 200,
+            backgroundColor: designSystem.colors.surface,
+            border: `1px solid ${designSystem.colors.border}`,
+            borderRadius: designSystem.effects.borderRadius.lg,
+          }}>
+            <Typography variant="caption" sx={{ color: designSystem.colors.textTertiary, display: 'block', mb: 1 }}>
+              Avg. Open Rate
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography variant="h4" sx={{ color: designSystem.colors.textPrimary, fontWeight: 700 }}>
+                {campaigns.length > 0 
+                  ? (campaigns.reduce((sum, c) => sum + (c.openRate || 0), 0) / campaigns.length).toFixed(1)
+                  : '0'}%
+              </Typography>
+              <TrendingUpIcon sx={{ color: designSystem.colors.success, fontSize: 16 }} />
+            </Box>
+          </Card>
+        </Box>
 
-            <FormControl variant="outlined" size="small" sx={{ minWidth: { sm: 94, md: 225 }, bgcolor: "#F8F9FA", borderRadius: "6px", marginRight: "auto", pl:1 }}>
-              <InputLabel htmlFor="status-select" sx={{ fontSize: "14px", boxSizing: "border-box", display: "flex", alignItems: "center", }}>
-                <SearchIcon />&nbsp;Search for campaigns here...
-              </InputLabel>
-              <InputBase
+        <Snackbar
+          open={showAlert}
+          autoHideDuration={3000}
+          onClose={() => setshowAlert(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert 
+            severity="success" 
+            onClose={() => setshowAlert(false)} 
+            sx={{ 
+              width: '100%',
+              backgroundColor: designSystem.colors.successBg,
+              color: designSystem.colors.success,
+              border: `1px solid ${designSystem.colors.successBorder}`,
+              '& .MuiAlert-icon': { color: designSystem.colors.success }
+            }}
+          >
+            {alertError}
+          </Alert>
+        </Snackbar>
+
+        {/* Filters Card */}
+        <Card sx={{ 
+          p: 2.5,
+          mb: 3,
+          backgroundColor: designSystem.colors.surface,
+          borderRadius: designSystem.effects.borderRadius.lg,
+          border: `1px solid ${designSystem.colors.border}`,
+          boxShadow: designSystem.effects.shadows.default,
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <FilterListIcon sx={{ color: designSystem.colors.primary }} />
+              <Typography variant="subtitle1" sx={{ color: designSystem.colors.textPrimary, fontWeight: 600 }}>
+                Filters
+              </Typography>
+            </Box>
+            <Badge
+              badgeContent={
+                (filters.search ? 1 : 0) +
+                (filters.status ? 1 : 0) +
+                (filters.type ? 1 : 0) +
+                (filters.startDate ? 1 : 0) +
+                (filters.endDate ? 1 : 0)
+              }
+              color="primary"
+              sx={{
+                '& .MuiBadge-badge': {
+                  backgroundColor: designSystem.colors.primary,
+                  color: designSystem.colors.textInverse,
+                }
+              }}
+            />
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            {/* Search */}
+            <Box sx={{ flex: 1, minWidth: 250 }}>
+              <TextField
+                placeholder="Search campaigns..."
                 value={filters.search}
                 onChange={handleChange}
                 name="search"
-                sx={{
-                  fontSize: "14px",
-                  width: "100%",
-                  pt: 0.5,
+                size="small"
+                fullWidth
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ color: designSystem.colors.textTertiary, mr: 1 }} />,
+                  sx: {
+                    backgroundColor: designSystem.colors.surfaceElevated,
+                    borderRadius: designSystem.effects.borderRadius.md,
+                    '& fieldset': {
+                      borderColor: designSystem.colors.border,
+                    },
+                    '&:hover fieldset': {
+                      borderColor: designSystem.colors.primary,
+                    },
+                  }
                 }}
               />
-            </FormControl>
+            </Box>
 
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 80, maxWidth: 100, bgcolor: "#F8F9FA", borderRadius: "6px", }}>
-              <InputLabel htmlFor="status-select" sx={{ fontSize: "14px" }}>
-                Status
-              </InputLabel>
+            {/* Status Filter */}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
               <Select
-                id="status-select"
                 name="status"
-                label="Status"
                 value={filters.status}
                 onChange={handleChange}
-                sx={{ fontSize: "14px", color: "#6D6976", }}
+                displayEmpty
+                sx={{
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  borderRadius: designSystem.effects.borderRadius.md,
+                  '& .MuiSelect-select': {
+                    color: designSystem.colors.textPrimary,
+                  },
+                  '& fieldset': {
+                    borderColor: designSystem.colors.border,
+                  },
+                }}
               >
-                <MenuItem value="" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
-                  All
+                <MenuItem value="" sx={{ color: designSystem.colors.textTertiary }}>
+                  All Status
                 </MenuItem>
-                {["Scheduled", "Draft", "Active", "Completed", "On Going", "Expired", "Paused", "Not Yet Started"].map((c) => (
-                  <MenuItem key={c} value={c} sx={{ color: "#6D6976", fontSize: "14px", padding: "2px 4px"}}>
-                    {c}
+                {["Scheduled", "Draft", "Active", "Completed", "On Going", "Expired", "Paused", "Not Yet Started"].map((status) => {
+                  const statusColors = getStatusColor(status);
+                  return (
+                    <MenuItem key={status} value={status}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          backgroundColor: statusColors.color 
+                        }} />
+                        {status}
+                      </Box>
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+
+            {/* Type Filter */}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Select
+                name="type"
+                value={filters.type}
+                onChange={handleChange}
+                displayEmpty
+                sx={{
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  borderRadius: designSystem.effects.borderRadius.md,
+                  '& .MuiSelect-select': {
+                    color: designSystem.colors.textPrimary,
+                  },
+                  '& fieldset': {
+                    borderColor: designSystem.colors.border,
+                  },
+                }}
+              >
+                <MenuItem value="" sx={{ color: designSystem.colors.textTertiary }}>
+                  All Types
+                </MenuItem>
+                {["Criteria Based", "Real Time", "Scheduled"].map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            {/* Type Dropdown */}
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 80, maxWidth: 120, bgcolor: "#F8F9FA", borderRadius: "6px", }}>
-              <InputLabel htmlFor="type-select" sx={{ fontSize: "14px", }}>
-                Type
-              </InputLabel>
-              <Select
-                id="type-select"
-                name="type"
-                label="Type"
-                value={filters.type}
-                onChange={handleChange}
-                sx={{ fontSize: "14px", }}
-              >
-                <MenuItem value="" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
-                  All
-                </MenuItem>
-                <MenuItem value="Criteria Based" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
-                  Criteria Based
-                </MenuItem>
-                <MenuItem value="Real Time" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
-                  Real Time
-                </MenuItem>
-                <MenuItem value="Scheduled" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
-                  Scheduled
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 60, maxWidth: 120 }}>
-
+            {/* Date Filters */}
+            <Box sx={{ display: 'flex', gap: 1, flex: 1, minWidth: 250 }}>
               <DatePicker
-                label={isSmallScreen ? "Start" : "Start Date"}
+                label="Start Date"
                 value={filters.startDate}
                 onChange={(date: Dayjs | null) =>
                   setFilters((prev) => ({ ...prev, startDate: date }))
@@ -332,23 +532,23 @@ const handleSortChange = (e: SelectChangeEvent<string>) => {
                 slotProps={{
                   textField: {
                     size: "small",
-                    variant: "outlined",
                     sx: {
-                      bgcolor: "#F8F9FA",
-                      borderRadius: "6px",
-                      "& .MuiOutlinedInput-root": { borderRadius: "6px", boxShadow: "none", },
-                      fontSize: "12px",
-                      minWidth: 80,
-
-                    },
+                      flex: 1,
+                      '& .MuiInputBase-input': {
+                        color: designSystem.colors.textPrimary,
+                      },
+                      '& fieldset': {
+                        borderColor: designSystem.colors.border,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: designSystem.colors.primary,
+                      },
+                    }
                   },
                 }}
               />
-            </FormControl>
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 60, maxWidth: 115 }}>
-
               <DatePicker
-                label={isSmallScreen ? "End" : "End Date"}
+                label="End Date"
                 value={filters.endDate}
                 onChange={(date: Dayjs | null) =>
                   setFilters((prev) => ({ ...prev, endDate: date }))
@@ -356,208 +556,387 @@ const handleSortChange = (e: SelectChangeEvent<string>) => {
                 slotProps={{
                   textField: {
                     size: "small",
-                    variant: "outlined",
                     sx: {
-                      bgcolor: "#F8F9FA",
-                      borderRadius: "6px",
-                      "& .MuiOutlinedInput-root": { borderRadius: "6px", boxShadow: "none", },
-                      fontSize: "12px",
-                      minWidth: 80,
-
-                    },
+                      flex: 1,
+                      '& .MuiInputBase-input': {
+                        color: designSystem.colors.textPrimary,
+                      },
+                      '& fieldset': {
+                        borderColor: designSystem.colors.border,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: designSystem.colors.primary,
+                      },
+                    }
                   },
                 }}
               />
-            </FormControl>
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 85, maxWidth: 120, bgcolor: "#F8F9FA", borderRadius: "6px" }}>
-              <InputLabel htmlFor="sort-select" sx={{ fontSize: "14px" }}>Sort By</InputLabel>
+            </Box>
+
+            {/* Sort Filter */}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
               <Select
-                id="sort-select"
-                name="sortBy"
-                label="Sort By"
                 value={computedSortValue}
                 onChange={handleSortChange}
-                sx={{ fontSize: "14px",  color: "#6D6976" }}
+                sx={{
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  borderRadius: designSystem.effects.borderRadius.md,
+                  '& .MuiSelect-select': {
+                    color: designSystem.colors.textPrimary,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  },
+                  '& fieldset': {
+                    borderColor: designSystem.colors.border,
+                  },
+                }}
+                startAdornment={<SortIcon sx={{ color: designSystem.colors.textTertiary, mr: 1 }} />}
               >
-                <MenuItem value="newest" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976" }}>
-                  Newest
-                </MenuItem>
-                <MenuItem value="oldest" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976" }}>
-                  Oldest
-                </MenuItem>
-                <MenuItem value="name_asc" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976" }}>
-                  Name (A to Z)
-                </MenuItem>
-                <MenuItem value="name_desc" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976" }}>
-                  Name (Z to A)
-                </MenuItem>
+                <MenuItem value="newest">Newest First</MenuItem>
+                <MenuItem value="oldest">Oldest First</MenuItem>
+                <MenuItem value="name_asc">Name (A-Z)</MenuItem>
+                <MenuItem value="name_desc">Name (Z-A)</MenuItem>
               </Select>
             </FormControl>
           </Box>
-        </LocalizationProvider>
-        <Box sx={{ p: 1 }}></Box>
-        <Table sx={{
-          // borderCollapse: 'separate', borderSpacing: '0 8px',
-          '& .MuiTableCell-root': {
-            border: 'none !important', 
-          },
-        }}>
-          <TableHead>
-            <TableRow sx={{ bgcolor: '#F3F3F3', borderRadius: '10px', }}>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >NAME</TableCell>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >STATUS</TableCell>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >TYPE</TableCell>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >OPEN&nbsp;RATE</TableCell>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >CTR</TableCell>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >DELIVERED</TableCell>
-              <TableCell sx={{ color: '#495057', textAlign: "center", fontWeight: "semi-bold" }} >ACTIONS</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {(campaigns ?? []).length > 0 ? (
-              (campaigns ?? []).map((campaign) => (
-                <React.Fragment key={campaign._id}>
-                  <TableRow
-                    sx={{
-                      borderRadius: '6px',
-                      pb: 0.5,
-                      boxShadow: campaign._id === highlightedId
-                        ? 'inset 0px 0px 10px #ff9800'
-                        : 'inset 0px 0px 10px #DCE0F9',
-                      '& td, & th': { padding: '10px 10px', border: "none" },
-                    }}
-                  >
-                    <TableCell>
-                      <Button sx={{ color: "#0057D9", bgcolor: "#F2F7FF", fontSize: "12px", ml:0.8 }}>
-                        {campaign._id && getFakeId(campaign._id)}
-                      </Button>
-                      <Typography sx={{ fontWeight: "bold", fontSize: "12px", p: 0.25, ml:1.5 }}>
-                        {campaign.name}
-                      </Typography>
-                      <Typography sx={{ color: "#626262", fontSize: "12px", pt: 0.25, pb: 0.25 }}>
-                        <DoneIcon sx={{ fontSize: "11px", pt: 0.25, pb: 0.25 }} /> Published on&nbsp;
-                        {campaign.createdAt?.toString().split('-').join(' ').slice(0, 10)}
-                        {/* publihshed date should be added instead of crea */}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        sx={{
-                          color:
-                            campaign.status === 'Expired'
-                              ? '#F83738'
-                              : campaign.status === 'Completed'
-                                ? '#0057D9'
-                                : campaign.status === 'Draft'
-                                  ? '#c0b000'
-                                  : campaign.status === 'Scheduled'
-                                    ? '#04dcd1'
-                                    : campaign.status === 'Paused'
-                                      ? '#a7690b'
-                                      : '#52B141',
-                          bgcolor:
-                            campaign.status === 'Expired'
-                              ? '#F8DDDD'
-                              : campaign.status === 'Completed'
-                                ? '#E2ECFC'
-                                : campaign.status === 'Draft'
-                                  ? '#f9f7e2'
-                                  : campaign.status === 'Scheduled'
-                                    ? '#e2f6f9'
-                                    : campaign.status === 'Paused'
-                                      ? '#f8e3c5'
-                                      : '#E6F5E3',
-                          fontSize: '12px',
-                          fontWeight: 'semi-bold',
-                          minWidth: '78px',
-                        }}
-                      >
-                        {campaign.status}
-                      </Button>
-                    </TableCell>
-                    <TableCell sx={{ color: '#6D6976', textAlign: "center" }}>{campaign.type}</TableCell>
-                    <TableCell sx={{ color: '#6D6976', textAlign: "center" }}>{campaign.openRate}%</TableCell>
-                    <TableCell>
-                      <Typography sx={{ color: '#6D6976', textAlign: "center" }}>
-                        {campaign.ctr}%
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography sx={{ color: '#6D6976', textAlign: "center" }}>
-                        {campaign.delivered}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: { xs: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
-                          gap: { xs: 1, lg: 0.25 },
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
+        </Card>
 
-                        <IconButton sx={{ borderRadius: '25px' }}
-                          onClick={() => campaign._id && handleEditClick(campaign._id)}
-                          disabled={!campaign._id}
-                        >
-                          <EditIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
-                        </IconButton>
-                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => campaign._id && handlePauseResume(campaign._id, campaign.status ?? '')}>
-                          {campaign.status === "Paused" ? (
-                            <PlayArrowIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
-                          ) : (
-                            <PauseIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
-                          )}
-                        </IconButton>
-                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => campaign._id && handleDuplicate(campaign._id)}>
-                          <ContentCopyIcon sx={{ fontSize: '30px', color: '#6A7075', bgcolor: '#EFEFEF', p: 0.7, borderRadius: '4.5px' }} />
-                        </IconButton>
-                        <IconButton sx={{ borderRadius: '25px' }} onClick={() => campaign._id && handleDeleteClick(campaign._id)}>
-                          <DeleteIcon sx={{ fontSize: '30px', color: 'white', bgcolor: '#F83738', p: { xs: 0.7 }, borderRadius: '4.5px' }} />
-                        </IconButton>
+        {/* Campaigns Table */}
+        <Card sx={{ 
+          backgroundColor: designSystem.colors.surface,
+          borderRadius: designSystem.effects.borderRadius.lg,
+          border: `1px solid ${designSystem.colors.border}`,
+          boxShadow: designSystem.effects.shadows.default,
+          overflow: 'hidden',
+        }}>
+          <TableContainer ref={tableRef}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ 
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  '& th': {
+                    borderBottom: `1px solid ${designSystem.colors.border}`,
+                    color: designSystem.colors.textSecondary,
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    py: 1.5,
+                  }
+                }}>
+                  <TableCell sx={{ width: '25%' }}>CAMPAIGN</TableCell>
+                  <TableCell>STATUS</TableCell>
+                  <TableCell>TYPE</TableCell>
+                  <TableCell>METRICS</TableCell>
+                  <TableCell align="center">ACTIONS</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {(campaigns ?? []).length > 0 ? (
+                  (campaigns ?? []).map((campaign) => {
+                    const statusColors = getStatusColor(campaign.status || 'Draft');
+                    const typeColor = getTypeColor(campaign.type || '');
+                    
+                    return (
+                      <TableRow
+                        key={campaign._id}
+                        sx={{
+                          borderBottom: `1px solid ${designSystem.colors.border}`,
+                          backgroundColor: campaign._id === highlightedId 
+                            ? alpha(designSystem.colors.primary, 0.05)
+                            : 'transparent',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: designSystem.colors.hoverSecondary,
+                          },
+                          '& td': {
+                            py: 1.5,
+                            borderBottom: `1px solid ${designSystem.colors.border}`,
+                          }
+                        }}
+                      >
+                        {/* Campaign Name & Details */}
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                            <Avatar
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                backgroundColor: designSystem.colors.primaryBg,
+                                color: designSystem.colors.primary,
+                                fontWeight: 600,
+                                fontSize: '0.875rem',
+                              }}
+                            >
+                              {campaign.name?.charAt(0).toUpperCase() || 'C'}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Typography variant="subtitle2" sx={{ 
+                                  color: designSystem.colors.textPrimary,
+                                  fontWeight: 600,
+                                  '&:hover': {
+                                    color: designSystem.colors.primary,
+                                    cursor: 'pointer',
+                                  }
+                                }}>
+                                  {campaign.name}
+                                </Typography>
+                                <Chip
+                                  label={getFakeId(campaign._id??"")}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: designSystem.colors.surfaceElevated,
+                                    color: designSystem.colors.textSecondary,
+                                    fontSize: '0.7rem',
+                                    height: 18,
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="caption" sx={{ 
+                                color: designSystem.colors.textTertiary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                              }}>
+                                <CalendarTodayIcon sx={{ fontSize: 12 }} />
+                                Created {formatDate(
+                                  typeof campaign.createdAt === 'string'
+                                    ? campaign.createdAt
+                                    : campaign.createdAt instanceof Date
+                                      ? campaign.createdAt.toISOString()
+                                      : undefined
+                                )}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+
+                        {/* Status */}
+                        <TableCell>
+                          <Chip
+                            label={campaign.status || 'Draft'}
+                            size="small"
+                            sx={{
+                              backgroundColor: statusColors.bg,
+                              color: statusColors.color,
+                              fontWeight: 600,
+                              borderRadius: designSystem.effects.borderRadius.sm,
+                              border: `1px solid ${statusColors.color}30`,
+                            }}
+                          />
+                        </TableCell>
+
+                        {/* Type */}
+                        <TableCell>
+                          <Chip
+                            label={campaign.type || 'N/A'}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderColor: typeColor,
+                              color: typeColor,
+                              fontWeight: 500,
+                              backgroundColor: `${typeColor}15`,
+                            }}
+                          />
+                        </TableCell>
+
+                        {/* Metrics */}
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Box>
+                              <Typography variant="caption" sx={{ color: designSystem.colors.textTertiary, display: 'block' }}>
+                                Open Rate
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: (campaign.openRate || 0) > 20 ? designSystem.colors.success : designSystem.colors.error,
+                                fontWeight: 600,
+                              }}>
+                                {campaign.openRate || 0}%
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" sx={{ color: designSystem.colors.textTertiary, display: 'block' }}>
+                                CTR
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: designSystem.colors.textPrimary,
+                                fontWeight: 600,
+                              }}>
+                                {campaign.ctr || 0}%
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" sx={{ color: designSystem.colors.textTertiary, display: 'block' }}>
+                                Delivered
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                color: designSystem.colors.textPrimary,
+                                fontWeight: 600,
+                              }}>
+                                {campaign.delivered || 0}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+
+                        {/* Actions */}
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                onClick={() => campaign._id && handleEditClick(campaign._id)}
+                                sx={{
+                                  color: designSystem.colors.textTertiary,
+                                  '&:hover': {
+                                    color: designSystem.colors.primary,
+                                    backgroundColor: designSystem.colors.primaryBg,
+                                  }
+                                }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            
+                            <Tooltip title={campaign.status === "Paused" ? "Resume" : "Pause"}>
+                              <IconButton
+                                size="small"
+                                onClick={() => campaign._id && handlePauseResume(campaign._id, campaign.status ?? '')}
+                                sx={{
+                                  color: designSystem.colors.textTertiary,
+                                  '&:hover': {
+                                    color: campaign.status === "Paused" ? designSystem.colors.success : designSystem.colors.warning,
+                                    backgroundColor: campaign.status === "Paused" ? designSystem.colors.successBg : designSystem.colors.warningBg,
+                                  }
+                                }}
+                              >
+                                {campaign.status === "Paused" ? 
+                                  <PlayArrowIcon fontSize="small" /> : 
+                                  <PauseIcon fontSize="small" />
+                                }
+                              </IconButton>
+                            </Tooltip>
+                            
+                            <Tooltip title="Duplicate">
+                              <IconButton
+                                size="small"
+                                onClick={() => campaign._id && handleDuplicate(campaign._id)}
+                                sx={{
+                                  color: designSystem.colors.textTertiary,
+                                  '&:hover': {
+                                    color: designSystem.colors.accent,
+                                    backgroundColor: designSystem.colors.accentBg,
+                                  }
+                                }}
+                              >
+                                <ContentCopyIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            
+                            <Tooltip title="Delete">
+                              <IconButton
+                                size="small"
+                                onClick={() => campaign._id && handleDeleteClick(campaign._id)}
+                                sx={{
+                                  color: designSystem.colors.textTertiary,
+                                  '&:hover': {
+                                    color: designSystem.colors.error,
+                                    backgroundColor: designSystem.colors.errorBg,
+                                  }
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body2" sx={{ color: designSystem.colors.textTertiary }}>
+                        Loading campaigns...
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="body1" sx={{ color: designSystem.colors.textSecondary, mb: 1 }}>
+                          No campaigns found
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: designSystem.colors.textTertiary }}>
+                          Try adjusting your filters or create a new campaign
+                        </Typography>
                       </Box>
                     </TableCell>
                   </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-                  <TableRow key={`${campaign._id}-spacer`}>
-                    <TableCell colSpan={7} sx={{ padding: 0, height: '10px' }} />
-                  </TableRow>
-                </React.Fragment>
-              ))
-            ) : loading ? (<>
-              <TableRow>
-                <TableCell colSpan={3} align="center">
-                  <Typography variant="body2">Loading...</Typography>
-                </TableCell>
-              </TableRow>
-            </>)
+          {/* Pagination */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            p: 2,
+            borderTop: `1px solid ${designSystem.colors.border}`,
+            backgroundColor: designSystem.colors.surfaceElevated,
+          }}>
+            <Button
+              onClick={prevPage}
+              disabled={filters.page <= 1}
+              sx={{
+                color: designSystem.colors.textSecondary,
+                '&:hover': {
+                  color: designSystem.colors.primary,
+                },
+                '&.Mui-disabled': {
+                  color: designSystem.colors.textDisabled,
+                }
+              }}
+            >
+              Previous
+            </Button>
+            
+            <Typography variant="body2" sx={{ color: designSystem.colors.textSecondary }}>
+              Page <Box component="span" sx={{ color: designSystem.colors.textPrimary, fontWeight: 600 }}>{pagination.page || 1}</Box> of <Box component="span" sx={{ color: designSystem.colors.textPrimary, fontWeight: 600 }}>{pagination.totalPages || 1}</Box>
+            </Typography>
+            
+            <Button
+              onClick={nextPage}
+              disabled={filters.page >= (pagination.totalPages || 1)}
+              sx={{
+                color: designSystem.colors.textSecondary,
+                '&:hover': {
+                  color: designSystem.colors.primary,
+                },
+                '&.Mui-disabled': {
+                  color: designSystem.colors.textDisabled,
+                }
+              }}
+            >
+              Next
+            </Button>
+          </Box>
+        </Card>
 
-              : (
-                <Alert variant="outlined" severity="warning">
-                  No&nbsp;campaigns&nbsp;found.
-                </Alert>
-
-              )}
-          </TableBody>
-        </Table>
         <DeleteConfirmationModal
           open={isDeleteModalopen}
           handleClose={() => setIsDeleteModalopen(false)}
           handleConfirm={handleConfirmDelete}
           title="Delete Campaign"
           message="Are you sure you want to delete this campaign? This action cannot be undone."
+          mode={mode}
         />
-
-        <Box sx={{ display: "flex", justifyContent: "space-between", p: 1, mb: 1 }}>
-          <Button onClick={prevPage} disabled={filters.page <= 1}>Previous</Button>
-          <Typography>Page {pagination.page || 1} of {pagination.totalPages || 1}</Typography>
-          <Button onClick={nextPage} disabled={filters.page >= (pagination.totalPages || 1)}>Next</Button>
-        </Box>
-
-      </TableContainer>
-    </Container>
+      </Container>
+    </LocalizationProvider>
   );
 };
 

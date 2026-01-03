@@ -12,21 +12,23 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../redux/hooks";
 import { useNavigate } from "react-router-dom";
 import { setSelectedCampaignData, setAudienceName as setAudienceName1 } from "../../redux/slices/campaignSlice";
+import { useDesignSystem } from '../../design/theme';
 
 interface AudienceSelectorProps {
   handleChange: (event: any) => void;
   campaignData: CampaignData;
   audienceName: string;
   setAudienceName: React.Dispatch<React.SetStateAction<string>>;
+  mode: 'light' | 'dark';
 }
 
-const AudienceSelector: React.FC<AudienceSelectorProps> = ({ handleChange, campaignData, audienceName, setAudienceName }) => {
+const AudienceSelector: React.FC<AudienceSelectorProps> = ({ mode, handleChange, campaignData, audienceName, setAudienceName }) => {
 
   const [isfilterModalId, setIsfilterModalId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(""); // New state for debounced search
   const [page, setPage] = useState(1);
-
+  const ds = useDesignSystem(mode);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -79,7 +81,7 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ handleChange, campa
   };
 
   return (
-    <Box sx={{ boxSizing: 'border-box' }}>
+    <Box sx={{ boxSizing: 'border-box',bgcolor: ds.colors.surfaceElevated,color: ds.colors.textPrimary }}>
       <Box display="flex"
         sx={{
           justifyContent: { md: "space-between", xs: "flex-start" },
@@ -188,6 +190,7 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ handleChange, campa
 
             {isfilterModalId === audience._id?.toString() && (
               <FilterModal
+                mode={mode}
                 open={true}
                 onClose={handleClose}
                 name={audience.name ?? ''}

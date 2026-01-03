@@ -14,9 +14,10 @@ interface Step4ReviewProps {
     campaignData: CampaignData;
     audienceName: String;
     templateData: { name: String; type: String };
+    mode: 'light' | 'dark';
 }
 
-const Step4Review: React.FC<Step4ReviewProps> = ({ campaignData, audienceName, templateData }) => {
+const Step4Review: React.FC<Step4ReviewProps> = ({ mode, campaignData, audienceName, templateData }) => {
     const audienceName1 = useSelector((state: RootState) => state.campaign.audienceName);
 
     return (

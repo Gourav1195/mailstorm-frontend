@@ -4,21 +4,23 @@ import React from 'react'
 import { Grid2 as Grid, Card, CardActionArea, CardContent, Box, Typography, TextField, } from "@mui/material";
 import { CampaignData } from 'types/campaign';
 import { styled } from '@mui/material/styles';
+import { useDesignSystem } from '../../design/theme';
 
 interface Step0CampaignTypeProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   campaignData: CampaignData;
+  mode: 'light' | 'dark';
 }
 const SpacedBox = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(2),
   marginBottom: theme.spacing(2),
 }));
 
-const Step0CampaignType: React.FC<Step0CampaignTypeProps> = ({ handleChange, campaignData }) => {
-
+const Step0CampaignType: React.FC<Step0CampaignTypeProps> = ({ mode, handleChange, campaignData }) => {
+  const ds = useDesignSystem(mode);
   const isSelected = (selectVal: string) => campaignData.type === selectVal ? '2px solid #007BFF' : '1px solid #ddd';
   return (
-    <Box>
+    <Box sx={{ bgcolor: ds.colors.surfaceElevated,color: ds.colors.textPrimary, }}>
       <Typography variant="h6">Campaign Name</Typography>
       <SpacedBox>
         <TextField
@@ -29,6 +31,7 @@ const Step0CampaignType: React.FC<Step0CampaignTypeProps> = ({ handleChange, cam
           value={campaignData.name}
           onChange={handleChange}
           required
+          sx={{bgcolor: ds.colors.surfaceElevated,color: ds.colors.textPrimary,  '& .MuiInputLabel-root': { color: ds.colors.textSecondary }, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: ds.colors.border }, '&:hover fieldset': { borderColor: ds.colors.primary }, '&.Mui-focused fieldset': { borderColor: ds.colors.primary }, color: ds.colors.textPrimary, }, }}
         />
       </SpacedBox>
       <Typography variant="h6">Select Campaign Type</Typography>
@@ -40,8 +43,8 @@ const Step0CampaignType: React.FC<Step0CampaignTypeProps> = ({ handleChange, cam
               sx={{ border: isSelected("Criteria Based") }}
               onClick={() => handleChange({ target: { name: "type", value: "Criteria Based" } } as any)}>
               <CardActionArea>
-                <CardContent sx={{ display: 'flex' }}>
-                  <Box component="img" src={`${process.env.PUBLIC_URL}/icons/criteriaBased_Campaign.png`} alt="Real Time Campaign Icon" sx={{ width: 50, height: 50, mr: { xs: 1, md: 2 }, flexShrink: 0 }} />
+                <CardContent sx={{ display: 'flex', bgcolor:ds.colors.surfaceElevated, color: ds.colors.textPrimary }}>
+                  <Box component="img" src={`${process.env.PUBLIC_URL}/icons/criteriaBased_Campaign.png`} alt="Real Time Campaign Icon" sx={{  width: 50, height: 50, mr: { xs: 1, md: 2 }, flexShrink: 0 }} />
                   <Box>
                     <Typography variant="body1" fontWeight="bold">
                       Criteria-Based Campaign
@@ -60,7 +63,7 @@ const Step0CampaignType: React.FC<Step0CampaignTypeProps> = ({ handleChange, cam
               sx={{ border: isSelected("Real Time") }}
               onClick={() => handleChange({ target: { name: "type", value: "Real Time" } } as any)}>
               <CardActionArea>
-                <CardContent sx={{ display: 'flex' }}>
+                <CardContent sx={{ display: 'flex', bgcolor:ds.colors.surfaceElevated, color: ds.colors.textPrimary }}>
                   <Box component="img" src={`${process.env.PUBLIC_URL}/icons/realTime-Campaign.png`} alt="Real Time Campaign Icon" sx={{ width: 50, height: 50, mr: { xs: 1, md: 2 }, flexShrink: 0 }} />
                   <Box>
                     <Typography variant="body1" fontWeight="bold">
@@ -80,7 +83,7 @@ const Step0CampaignType: React.FC<Step0CampaignTypeProps> = ({ handleChange, cam
               sx={{ border: isSelected("Scheduled") }}
               onClick={() => handleChange({ target: { name: "type", value: "Scheduled" } } as any)}>
               <CardActionArea>
-                <CardContent sx={{ display: 'flex' }}>
+                <CardContent sx={{ display: 'flex', bgcolor:ds.colors.surfaceElevated, color: ds.colors.textPrimary }}>
                   <Box component="img" src={`${process.env.PUBLIC_URL}/icons/scheduled_Campaign.png`} alt="Real Time Campaign Icon" sx={{ width: 50, height: 50, mr: { xs: 1, md: 2 }, flexShrink: 0 }} />
                   <Box>
                     <Typography variant="body1" fontWeight="bold">

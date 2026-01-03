@@ -39,9 +39,10 @@ interface Step2TemplatesProps {
   campaignData: CampaignData;
   templateData: { name: string; type: string };
   setTemplateData: React.Dispatch<React.SetStateAction<{ name: string; type: string }>>;
+  mode: 'light' | 'dark';
 }
 
-const Step2Templates: React.FC<Step2TemplatesProps> = ({ handleChange, campaignData, templateData, setTemplateData }) => {
+const Step2Templates: React.FC<Step2TemplatesProps> = ({ mode, handleChange, campaignData, templateData, setTemplateData }) => {
 
   const [openIndex, setOpenIndex] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState<"Email" | "SMS" | "Push Notifications">('Email');

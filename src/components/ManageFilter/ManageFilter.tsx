@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from "react";
 import {
-  Typography, Box, Tabs, Tab, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Button, Select, MenuItem, InputAdornment, IconButton, Menu,
-  SelectChangeEvent, Snackbar, Alert, Divider, Modal, DialogActions, Dialog,
+  Typography, Box, Tabs, Tab, TextField, Table, TableBody, TableCell, 
+  TableContainer, TableHead, TableRow, Paper, Checkbox, Button, Select, 
+  MenuItem, InputAdornment, IconButton, Menu, SelectChangeEvent, 
+  Snackbar, Alert, Divider, Modal, DialogActions, Dialog,
+  useTheme, useMediaQuery,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteModal from "../Modals/DeleteModal";
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import DeleteModal from "../Modals/AllModal";
 import { fetchFilters, applyFilter, duplicateFilterAsync, deleteFilterAsync, updateFilterAsync } from "../../redux/slices/filterSlice";
 import { RootState } from "../../redux/store";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../redux/hooks";
 import { useNavigate } from "react-router-dom";
 import { setSelectedCampaignData } from '../../redux/slices/campaignSlice';
-import CryptoJS from 'crypto-js'
-const ManageFilters = () => {
+import CryptoJS from 'crypto-js';
+import { useDesignSystem } from "../../design/theme";
 
+const ManageFilters = () => {
+    const mode = useSelector((state: RootState) => state.theme.mode);
+  
+  const designSystem = useDesignSystem(mode);
+  
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState("");
@@ -54,8 +63,7 @@ const ManageFilters = () => {
     } else {
       setActiveSubTab("saved");
     }
-  }
-    , [isDraftBool]);
+  }, [isDraftBool]);
 
   const openDeleteSelectedModal = () => {
     setModalData({
@@ -78,52 +86,27 @@ const ManageFilters = () => {
   const { filters, currentPage, totalPages, loading, error, appliedFilter } = useSelector(
     (state: RootState) => state.filter
   );
-  // const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   const checked = event.target.checked;
-  //   setSelectAll(checked);
-
-  //   // Select or deselect all filtered rows for the current page
-  //   if (checked) {
-  //     setSelectedRows(filters.map((filter) => filter._id)); // Select all filtered rows on current page
-  //   } else {
-  //     setSelectedRows([]); // Deselect all filtered rows
-  //   }
-  // };
-
-  // // Function to toggle selection of individual rows
-  // const handleRowSelect = (id: number) => {
-  //   setSelectedRows((prevSelected) => {
-  //     const newSelected = new Set(prevSelected);
-  //     if (newSelected.has(id)) {
-  //       newSelected.delete(id); // Deselect the row
-  //     } else {
-  //       newSelected.add(id); // Select the row
-  //     }
-  //     return Array.from(newSelected); // Convert Set back to array
-  //   });
-  // };
 
   useEffect(() => {  
-      dispatch(setSelectedCampaignData({
-        _id:'',
-        name: '',
-        type: '',
-        audience: null,
-        template: null,
-        schedule: null,
-        status: 'Draft',
-        openRate: 0,
-        ctr: 0,
-        delivered: 0,
-      }));      
-}, []);
-
+    dispatch(setSelectedCampaignData({
+      _id:'',
+      name: '',
+      type: '',
+      audience: null,
+      template: null,
+      schedule: null,
+      status: 'Draft',
+      openRate: 0,
+      ctr: 0,
+      delivered: 0,
+    }));      
+  }, []);
 
   const handleSelectFilter = (filterId: string) => {
     setSelectedFilters((prevSelected) =>
       prevSelected.includes(filterId)
-        ? prevSelected.filter((id) => id !== filterId) // Deselect if already selected
-        : [...prevSelected, filterId] // Select if not selected
+        ? prevSelected.filter((id) => id !== filterId)
+        : [...prevSelected, filterId]
     );
   };
 
@@ -135,7 +118,6 @@ const ManageFilters = () => {
     }
     setSelectAll(!selectAll);
   };
-
 
   const handleClick = (event: React.MouseEvent<HTMLElement>, id: string) => {
     setMenuAnchorEl((prev) => ({
@@ -149,7 +131,6 @@ const ManageFilters = () => {
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: "saved" | "drafts") => {
-
     setActiveSubTab(newValue);
     setPage(1);
   }
@@ -208,14 +189,9 @@ const ManageFilters = () => {
   };
 
   const handleEditFilter = (id: string) => {
-
     const secretKey = process.env.REACT_APP_ENCRYPT_SECRET_KEY as string;
     const encryptedId = CryptoJS.AES.encrypt(id, secretKey).toString();
-
     navigate(`/edit-filter/${encodeURIComponent(encryptedId)}`);
-    // setSelectedFilter(filter);
-    // setEditModalOpen(true);
-    // setMenuAnchorEl({});
   };
 
   const handleUpdateFilter = async () => {
@@ -240,12 +216,25 @@ const ManageFilters = () => {
   };
 
   return (
-    <Box sx={{ padding: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        Manage Filters
-      </Typography>
-      <Typography sx={{ marginBottom: "20px" }} variant="body2" color="textSecondary" gutterBottom>
-        Save your current fiters for quick access and rouse. Revisit and edit draft filters anytime to refino your criteria. This fosture keeps your filters organized and within reach, streamining your workflow in one convenient place
+    <Box sx={{ 
+      padding: designSystem.spacing.container,
+      backgroundColor: designSystem.colors.background,
+      minHeight: '100vh',
+    }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ 
+          color: designSystem.colors.textPrimary,
+          fontWeight: designSystem.typography.scale.h5.fontWeight,
+        }}>
+          Manage Filters
+        </Typography>
+      </Box>
+      
+      <Typography sx={{ 
+        marginBottom: designSystem.spacing.section,
+        color: designSystem.colors.textSecondary,
+      }} variant="body2" gutterBottom>
+        Save your current filters for quick access and reuse. Revisit and edit draft filters anytime to refine your criteria. This feature keeps your filters organized and within reach, streamlining your workflow in one convenient place.
       </Typography>
 
       <Snackbar
@@ -253,38 +242,87 @@ const ManageFilters = () => {
         autoHideDuration={3000}
         onClose={() => setShowAlert(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      // sx={{mt:8}}
       >        
-        <Alert severity="success" onClose={() => setShowAlert(false)} sx={{ width: '100%' }}>
+        <Alert 
+          severity="success" 
+          onClose={() => setShowAlert(false)} 
+          sx={{ 
+            width: '100%',
+            backgroundColor: designSystem.colors.successBg,
+            color: designSystem.colors.success,
+            border: `1px solid ${designSystem.colors.successBorder}`,
+            '& .MuiAlert-icon': {
+              color: designSystem.colors.success,
+            }
+          }}
+        >
           {alertData}
         </Alert>        
       </Snackbar>
 
-      <DeleteModal open={modalData.open}
+      <DeleteModal 
+        open={modalData.open}
         handleClose={() => setModalData(prev => ({ ...prev, open: false }))}
         handleConfirm={modalData.handleConfirm}
         title={modalData.title}
         message={modalData.message}
+        mode={mode}
       />
 
-      <Box bgcolor="white" boxShadow={2} borderRadius={2} padding={2}>
-        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <Tabs value={activeSubTab} onChange={handleTabChange}>
-          <Tab value="saved"  /*onClick={() => { setActiveSubTab("saved"); setPage(1); }}*/ sx={{ fontWeight: "600" }} label="Saved Filters" />
-          <Tab value="drafts" /*onClick={() => { setActiveSubTab("drafts"); setPage(1); }}*/ sx={{ fontWeight: "600" }} label="Drafts" />
-        </Tabs>
-        <Button variant="contained" color="error" size="small"
-                    // sx={{ position: 'absolute', top: 23, left: 86, }}
-                    onClick={() => openDeleteSelectedModal()}
-                    // onClick={()=>setIsDeleteModalopen(true)}
-                    disabled={selectedFilters.length === 0}
-                    sx={{mr:2}}
-                  >
-                    Delete Selected
-                  </Button>
+      <Box sx={{
+        backgroundColor: designSystem.colors.surface,
+        boxShadow: designSystem.effects.shadows.default,
+        borderRadius: designSystem.effects.borderRadius.md,
+        padding: designSystem.spacing.lg,
+      }}>
+        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
+          <Tabs 
+            value={activeSubTab} 
+            onChange={handleTabChange}
+            sx={{
+              '& .MuiTab-root': {
+                fontWeight: 600,
+                color: designSystem.colors.textTertiary,
+                '&.Mui-selected': {
+                  color: designSystem.colors.primary,
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: designSystem.colors.primary,
+              }
+            }}
+          >
+            <Tab value="saved" label="Saved Filters" />
+            <Tab value="drafts" label="Drafts" />
+          </Tabs>
+          <Button 
+            variant="contained" 
+            color="error" 
+            size="small"
+            onClick={() => openDeleteSelectedModal()}
+            disabled={selectedFilters.length === 0}
+            sx={{
+              mr: 2,
+              backgroundColor: selectedFilters.length === 0 
+                ? `${designSystem.colors.error}40` 
+                : designSystem.colors.error,
+              '&:hover': {
+                backgroundColor: designSystem.colors.error,
+              }
+            }}
+          >
+            Delete Selected
+          </Button>
         </Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" padding={2} bgcolor="white" sx={{width:'100%'}}>
-
+        
+        <Box display="flex" justifyContent="space-between" alignItems="center" 
+          sx={{ 
+            padding: designSystem.spacing.md,
+            backgroundColor: designSystem.colors.surface,
+            borderRadius: designSystem.effects.borderRadius.sm,
+            mb: 3,
+          }}
+        >
           <TextField
             variant="outlined"
             placeholder="Search Filters"
@@ -294,11 +332,26 @@ const ManageFilters = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon color="action" />
+                  <SearchIcon sx={{ color: designSystem.colors.textTertiary }} />
                 </InputAdornment>
               ),
+              sx: {
+                backgroundColor: designSystem.colors.surfaceElevated,
+                borderRadius: designSystem.effects.borderRadius.sm,
+                color: designSystem.colors.textPrimary,
+                '& fieldset': {
+                  borderColor: designSystem.colors.border,
+                  
+                },
+                '&:hover fieldset': {
+                  borderColor: designSystem.colors.primary,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: designSystem.colors.primary,
+                }
+              }
             }}
-            sx={{ width: 250, backgroundColor: "#f5f5f5" }}
+            sx={{ width: 250 }}
           />
 
           <Select
@@ -309,66 +362,190 @@ const ManageFilters = () => {
             IconComponent={ExpandMoreIcon}
             value={sortBy === "name" ? `name_${order}` : sortBy}
             onChange={handleSortChange}
-            sx={{ width: 120, backgroundColor: "#f5f5f5" }}
+            sx={{ 
+              width: 120,
+              backgroundColor: designSystem.colors.surfaceElevated,
+              '& .MuiSelect-select': {
+                color: designSystem.colors.textPrimary,
+              },
+              '& fieldset': {
+                borderColor: designSystem.colors.border,
+              },
+              '&:hover fieldset': {
+                borderColor: designSystem.colors.primary,
+              },
+            }}
           >
-            <MenuItem value="">Sort by</MenuItem>
-            <MenuItem value="name_asc">Name (A to Z)</MenuItem>
-            <MenuItem value="name_desc">Name (Z to A)</MenuItem>
+            <MenuItem value="" sx={{ color: designSystem.colors.textTertiary, backgroundColor: designSystem.colors.surface, }}>Sort by</MenuItem>
+            <MenuItem value="name_asc" sx={{ color: designSystem.colors.textPrimary, backgroundColor: designSystem.colors.surface, ":hover": { backgroundColor: designSystem.colors.surfaceElevated }}}>
+              Name (A to Z)
+            </MenuItem>
+            <MenuItem value="name_desc" sx={{ color: designSystem.colors.textPrimary, backgroundColor: designSystem.colors.surface, ":hover": { backgroundColor: designSystem.colors.surfaceElevated } }}>
+              Name (Z to A)
+            </MenuItem>
           </Select>
         </Box>
 
-        <TableContainer component={Paper}>
+        <TableContainer 
+          component={Paper}
+          sx={{
+            backgroundColor: designSystem.colors.surface,
+            borderRadius: designSystem.effects.borderRadius.sm,
+            boxShadow: 'none',
+            border: `1px solid ${designSystem.colors.border}`,
+          }}
+        >
           <Table>
-            <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+            <TableHead sx={{ backgroundColor: designSystem.colors.surfaceElevated }}>
               <TableRow>
-                <TableCell>
-                  <Checkbox checked={selectAll} onChange={handleSelectAll} />
+                <TableCell sx={{ borderColor: designSystem.colors.border }}>
+                  <Checkbox 
+                    checked={selectAll} 
+                    onChange={handleSelectAll}
+                    sx={{
+                      color: designSystem.colors.textTertiary,
+                      '&.Mui-checked': {
+                        color: designSystem.colors.primary,
+                      },
+                    }}
+                  />
                 </TableCell>
-                <TableCell>FILTER NAME</TableCell>
-                <TableCell>TAGS</TableCell>
-                <TableCell>DESCRIPTION</TableCell>
-                <TableCell sx={{ position: 'relative' }}>
+                <TableCell sx={{ 
+                  borderColor: designSystem.colors.border,
+                  color: designSystem.colors.textPrimary,
+                  fontWeight: 600,
+                }}>
+                  FILTER NAME
+                </TableCell>
+                <TableCell sx={{ 
+                  borderColor: designSystem.colors.border,
+                  color: designSystem.colors.textPrimary,
+                  fontWeight: 600,
+                }}>
+                  TAGS
+                </TableCell>
+                <TableCell sx={{ 
+                  borderColor: designSystem.colors.border,
+                  color: designSystem.colors.textPrimary,
+                  fontWeight: 600,
+                }}>
+                  DESCRIPTION
+                </TableCell>
+                <TableCell sx={{ 
+                  borderColor: designSystem.colors.border,
+                  position: 'relative',
+                  color: designSystem.colors.textPrimary,
+                  fontWeight: 600,
+                }}>
                   ACTIONS                  
                 </TableCell>
               </TableRow>
             </TableHead>
 
             {loading ? (
-              <Typography variant="body1">Loading filters...</Typography>
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body1" sx={{ color: designSystem.colors.textTertiary }}>
+                  Loading filters...
+                </Typography>
+              </Box>
             ) : error ? (
-              <Typography variant="body1" color="error">
-                {error}
-              </Typography>
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body1" sx={{ color: designSystem.colors.error }}>
+                  {error}
+                </Typography>
+              </Box>
             ) : (
               <TableBody>
                 {filters.length > 0 ? (
                   filters
-                    .filter((filter) => filter && filter.name
-                      // && filter.isDraft == tabValue
-                    )
+                    .filter((filter) => filter && filter.name)
                     .map((filter, index) => (
-                      <TableRow key={filter._id} sx={{
-                        boxShadow: filter._id === highlightedId
-                          ? 'inset 0px 0px 10px #ff9800'
-                          : 'inset 0px 0px 10px #fff',
-                        bgcolor: index % 2 === 0 ? 'white' : '#FAFAFA',
-                      }}>
-                        <TableCell>
+                      <TableRow 
+                        key={filter._id} 
+                        sx={{
+                          backgroundColor: index % 2 === 0 
+                            ? designSystem.colors.surface 
+                            : designSystem.colors.surfaceElevated,
+                          borderColor: designSystem.colors.border,
+                          boxShadow: filter._id === highlightedId
+                            ? `inset 0px 0px 0px 2px ${designSystem.colors.primary}`
+                            : 'none',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            backgroundColor: designSystem.colors.hoverSecondary,
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ borderColor: designSystem.colors.border }}>
                           <Checkbox
                             checked={selectedFilters.includes(filter._id)}
                             onChange={() => handleSelectFilter(filter._id)}
+                            sx={{
+                              color: designSystem.colors.textTertiary,
+                              '&.Mui-checked': {
+                                color: designSystem.colors.primary,
+                              },
+                            }}
                           />
                         </TableCell>
-                        <TableCell style={{ color: "#4170ba", fontWeight: "600" }}>{filter.name}</TableCell>
-                        <TableCell style={{ fontWeight: "600" }}>{filter.tags.join(', ')}</TableCell>
-                        <TableCell style={{ fontWeight: "600" }}>{filter.description}</TableCell>
-                        <TableCell >
+                        <TableCell sx={{ 
+                          color: designSystem.colors.primary,
+                          fontWeight: 600,
+                          borderColor: designSystem.colors.border,
+                        }}>
+                          {filter.name}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          color: designSystem.colors.textPrimary,
+                          borderColor: designSystem.colors.border,
+                        }}>
+                          {filter.tags.join(', ')}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          color: designSystem.colors.textSecondary,
+                          borderColor: designSystem.colors.border,
+                        }}>
+                          {filter.description}
+                        </TableCell>
+                        <TableCell sx={{ borderColor: designSystem.colors.border }}>
+                          <Box sx={{ display: "flex", gap: 1 }}>
+                            <Button 
+                              variant="contained" 
+                              size="small" 
+                              onClick={() => handleApplyFilter(filter._id)}
+                              sx={{
+                                backgroundColor: designSystem.colors.success,
+                                '&:hover': {
+                                  backgroundColor: designSystem.colors.successDark,
+                                }
+                              }}
+                            >
+                              Apply
+                            </Button>
+                            <Button 
+                              variant="contained" 
+                              size="small" 
+                              onClick={() => handleDuplicateFilter(filter._id)}
+                              sx={{
+                                backgroundColor: designSystem.colors.warning,
+                                '&:hover': {
+                                  backgroundColor: designSystem.colors.warningDark,
+                                }
+                              }}
+                            >
+                              Duplicate
+                            </Button>
 
-                          <Box sx={{ display: "flex" }}>
-                            <Button variant="contained" color="success" size="small" onClick={() => handleApplyFilter(filter._id)} style={{ marginRight: 8 }}>Apply</Button>
-                            <Button variant="contained" color="warning" size="small" onClick={() => handleDuplicateFilter(filter._id)} >Duplicate</Button>
-
-                            <IconButton onClick={(e) => { handleClick(e, filter._id) }}>
+                            <IconButton 
+                              onClick={(e) => { handleClick(e, filter._id) }}
+                              sx={{
+                                color: designSystem.colors.textTertiary,
+                                '&:hover': {
+                                  color: designSystem.colors.primary,
+                                  backgroundColor: designSystem.colors.hover,
+                                }
+                              }}
+                            >
                               <MoreVertIcon />
                             </IconButton>
 
@@ -384,9 +561,36 @@ const ManageFilters = () => {
                                 vertical: "top",
                                 horizontal: "center",
                               }}
+                              PaperProps={{
+                                sx: {
+                                  backgroundColor: designSystem.colors.surface,
+                                  border: `1px solid ${designSystem.colors.border}`,
+                                  boxShadow: designSystem.effects.shadows.md,
+                                }
+                              }}
                             >
-                              <MenuItem onClick={() => handleEditFilter(filter._id)}>Edit</MenuItem>
-                              <MenuItem onClick={() => openDeleteOneModal(filter._id)}>Delete</MenuItem>
+                              <MenuItem 
+                                onClick={() => handleEditFilter(filter._id)}
+                                sx={{
+                                  color: designSystem.colors.textPrimary,
+                                  '&:hover': {
+                                    backgroundColor: designSystem.colors.hover,
+                                  }
+                                }}
+                              >
+                                Edit
+                              </MenuItem>
+                              <MenuItem 
+                                onClick={() => openDeleteOneModal(filter._id)}
+                                sx={{
+                                  color: designSystem.colors.error,
+                                  '&:hover': {
+                                    backgroundColor: `${designSystem.colors.error}10`,
+                                  }
+                                }}
+                              >
+                                Delete
+                              </MenuItem>
                             </Menu>
                           </Box>
                         </TableCell>
@@ -394,7 +598,14 @@ const ManageFilters = () => {
                     ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4}>No filters found</TableCell>
+                    <TableCell colSpan={5} sx={{ 
+                      textAlign: 'center', 
+                      color: designSystem.colors.textTertiary,
+                      borderColor: designSystem.colors.border,
+                      py: 3,
+                    }}>
+                      No filters found
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -402,55 +613,103 @@ const ManageFilters = () => {
           </Table>
         </TableContainer>
       </Box>
+      
       {/* Pagination */}
-      <div
-        style={{
+      <Box
+        sx={{
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          marginTop: "20px",
+          marginTop: designSystem.spacing.section,
         }}
       >
         <Button
           variant="outlined"
           disabled={page === 1}
           onClick={() => setPage(page - 1)}
-          sx={{ marginRight: "10px" }}
+          sx={{ 
+            marginRight: designSystem.spacing.sm,
+            borderColor: designSystem.colors.border,
+            color: designSystem.colors.textPrimary,
+            '&:hover': {
+              borderColor: designSystem.colors.primary,
+              backgroundColor: designSystem.colors.primaryBg,
+            },
+            '&.Mui-disabled': {
+              borderColor: designSystem.colors.borderLight,
+              color: designSystem.colors.textDisabled,
+            }
+          }}
         >
           Previous
         </Button>
-        <Typography>
-          Page <strong>{currentPage || page}</strong> of <strong>{totalPages || 1}</strong>
+        <Typography sx={{ color: designSystem.colors.textSecondary }}>
+          Page <strong style={{ color: designSystem.colors.textPrimary }}>{currentPage || page}</strong> of <strong style={{ color: designSystem.colors.textPrimary }}>{totalPages || 1}</strong>
         </Typography>
         <Button
           variant="outlined"
           disabled={page === totalPages}
           onClick={() => setPage(page + 1)}
-          sx={{ marginLeft: "10px" }}
+          sx={{ 
+            marginLeft: designSystem.spacing.sm,
+            borderColor: designSystem.colors.border,
+            color: designSystem.colors.textPrimary,
+            '&:hover': {
+              borderColor: designSystem.colors.primary,
+              backgroundColor: designSystem.colors.primaryBg,
+            },
+            '&.Mui-disabled': {
+              borderColor: designSystem.colors.borderLight,
+              color: designSystem.colors.textDisabled,
+            }
+          }}
         >
           Next
         </Button>
-      </div>
+      </Box>
 
+      {/* Filter Details Modal */}
       <Dialog
         open={openModal}
         onClose={() => setOpenModal(false)}
         fullWidth
-        aria-labelledby="filter-modal-title"
-        sx={{
-          borderRadius: "10px",
-          "& .MuiPaper-root": {
-            maxWidth: '550px',
-          },
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            backgroundColor: designSystem.colors.surface,
+            borderRadius: designSystem.effects.borderRadius.lg,
+          }
         }}
       >
-        <Box sx={{ bgcolor: '#0057D9', width: '100%', height: 35, display: 'flex', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: "white", ml: 2, mt: 0.5 }}>Saved&nbsp;Filter</Typography>
-          <IconButton onClick={() => setOpenModal(false)}>
-            <CloseIcon sx={{ color: "white" }} />
+        <Box sx={{ 
+          background: designSystem.colors.gradientPrimary,
+          py: 1.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          px: 2,
+          borderTopLeftRadius: designSystem.effects.borderRadius.lg,
+          borderTopRightRadius: designSystem.effects.borderRadius.lg,
+        }}>
+          <Typography sx={{ 
+            color: "white",
+            fontWeight: 600,
+          }}>
+            Saved Filter
+          </Typography>
+          <IconButton 
+            onClick={() => setOpenModal(false)}
+            sx={{ 
+              color: "white",
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon />
           </IconButton>
         </Box>
-        <Divider sx={{ marginBottom: 2 }} />
+        <Divider sx={{ borderColor: designSystem.colors.border }} />
         {appliedFilter ? (
           <>
             <Box
@@ -458,39 +717,62 @@ const ManageFilters = () => {
                 display: "grid",
                 gridTemplateColumns: "150px auto",
                 gap: 2,
-                width: '100%',
-                // maxWidth: "450px",
-                p: 2,
+                p: 3,
               }}
             >
-              <Typography sx={{ color: '#A3AABC' }}>Filter Name -</Typography>
-              <Typography sx={{ color: '#6D6976' }}>{appliedFilter.name}</Typography>
+              <Typography sx={{ color: designSystem.colors.textTertiary }}>Filter Name</Typography>
+              <Typography sx={{ color: designSystem.colors.textPrimary, fontWeight: 500 }}>{appliedFilter.name}</Typography>
 
-              <Typography sx={{ color: '#A3AABC' }}>Description -</Typography>
-              <Typography sx={{ color: '#6D6976' }}>{appliedFilter.description}</Typography>
+              <Typography sx={{ color: designSystem.colors.textTertiary }}>Description</Typography>
+              <Typography sx={{ color: designSystem.colors.textSecondary }}>{appliedFilter.description}</Typography>
 
-              <Typography sx={{ color: '#A3AABC' }}>Tags -</Typography>
-              <Typography sx={{ color: '#6D6976' }}>{appliedFilter.tags.toString().split(",").join(", ")}</Typography>
+              <Typography sx={{ color: designSystem.colors.textTertiary }}>Tags</Typography>
+              <Typography sx={{ color: designSystem.colors.textPrimary }}>{appliedFilter.tags.toString().split(",").join(", ")}</Typography>
 
-              <Typography sx={{ color: '#A3AABC' }}>Last Used -</Typography>
-              <Typography sx={{ color: '#6D6976' }}>{appliedFilter.lastUsed}</Typography>
+              <Typography sx={{ color: designSystem.colors.textTertiary }}>Last Used</Typography>
+              <Typography sx={{ color: designSystem.colors.textPrimary }}>{appliedFilter.lastUsed}</Typography>
 
-              <Typography sx={{ color: '#A3AABC' }}>CTR % -</Typography>
-              <Typography sx={{ color: '#6D6976' }}>{appliedFilter.ctr}</Typography>
-
+              <Typography sx={{ color: designSystem.colors.textTertiary }}>CTR %</Typography>
+              <Typography sx={{ 
+                color: appliedFilter.ctr > 0 ? designSystem.colors.success : designSystem.colors.error,
+                fontWeight: 600,
+              }}>
+                {appliedFilter.ctr}%
+              </Typography>
             </Box>
-            <DialogActions>
-              <Button variant="outlined" onClick={() => setOpenModal(false)} sx={{ marginRight: 1, bgcolor: "#EBEBEB", color: "#6D6976" }}>
+            <DialogActions sx={{ p: 2, borderTop: `1px solid ${designSystem.colors.border}` }}>
+              <Button 
+                variant="outlined" 
+                onClick={() => setOpenModal(false)}
+                sx={{ 
+                  borderColor: designSystem.colors.border,
+                  color: designSystem.colors.textSecondary,
+                  '&:hover': {
+                    borderColor: designSystem.colors.primary,
+                    backgroundColor: designSystem.colors.primaryBg,
+                  }
+                }}
+              >
                 Cancel
               </Button>
-              <Button variant="contained" color="primary" sx={{ bgcolor: "#0057D9" }} onClick={() => setOpenModal(false)}>
+              <Button 
+                variant="contained" 
+                onClick={() => setOpenModal(false)}
+                sx={{ 
+                  background: designSystem.colors.gradientPrimary,
+                  '&:hover': {
+                    opacity: 0.9,
+                  }
+                }}
+              >
                 Reuse for New Campaign
               </Button>
             </DialogActions>
           </>
-
         ) : (
-          <Typography>Loading filter details...</Typography>
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography sx={{ color: designSystem.colors.textTertiary }}>Loading filter details...</Typography>
+          </Box>
         )}
       </Dialog>
 
@@ -502,31 +784,75 @@ const ManageFilters = () => {
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: 400,
-          bgcolor: "background.paper",
-          boxShadow: 24,
+          backgroundColor: designSystem.colors.surface,
+          boxShadow: designSystem.effects.shadows.xl,
           p: 4,
-          borderRadius: 2,
+          borderRadius: designSystem.effects.borderRadius.lg,
+          border: `1px solid ${designSystem.colors.border}`,
         }}>
-          <IconButton sx={{ position: "absolute", top: 8, right: 8 }} onClick={() => setEditModalOpen(false)}>
+          <IconButton 
+            sx={{ 
+              position: "absolute", 
+              top: 8, 
+              right: 8,
+              color: designSystem.colors.textTertiary,
+            }} 
+            onClick={() => setEditModalOpen(false)}
+          >
             <CloseIcon />
           </IconButton>
-          <Typography variant="h6">Edit Filter</Typography>
-          <Divider sx={{ marginBottom: 2 }} />
+          <Typography variant="h6" sx={{ color: designSystem.colors.textPrimary, mb: 2 }}>
+            Edit Filter
+          </Typography>
+          <Divider sx={{ borderColor: designSystem.colors.border, mb: 3 }} />
           <TextField
             label="Filter Name"
             fullWidth
             value={selectedFilter?.name || ""}
             onChange={(e) => setSelectedFilter({ ...selectedFilter, name: e.target.value })}
             sx={{ marginBottom: 2 }}
+            InputLabelProps={{
+              sx: { color: designSystem.colors.textTertiary }
+            }}
+            InputProps={{
+              sx: {
+                color: designSystem.colors.textPrimary,
+                '& fieldset': {
+                  borderColor: designSystem.colors.border,
+                },
+              }
+            }}
           />
           <TextField
             label="Description"
             fullWidth
             value={selectedFilter?.description || ""}
             onChange={(e) => setSelectedFilter({ ...selectedFilter, description: e.target.value })}
-            sx={{ marginBottom: 2 }}
+            sx={{ marginBottom: 3 }}
+            InputLabelProps={{
+              sx: { color: designSystem.colors.textTertiary }
+            }}
+            InputProps={{
+              sx: {
+                color: designSystem.colors.textPrimary,
+                '& fieldset': {
+                  borderColor: designSystem.colors.border,
+                },
+              }
+            }}
           />
-          <Button variant="contained" onClick={handleUpdateFilter}>Update</Button>
+          <Button 
+            variant="contained" 
+            onClick={handleUpdateFilter}
+            sx={{
+              background: designSystem.colors.gradientPrimary,
+              '&:hover': {
+                opacity: 0.9,
+              }
+            }}
+          >
+            Update
+          </Button>
         </Box>
       </Modal>
     </Box>

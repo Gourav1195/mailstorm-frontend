@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -13,16 +13,16 @@ import {
   InputBase,
   styled,
 } from "@mui/material";
-import AllModal from "../Modals/DeleteModal";
+import AllModal from "../Modals/AllModal";
 import { DynamicIconProps } from '../../types/modal';
 import { useDispatch } from "react-redux";
 import { RootState } from "../../redux/store";
 import { AppDispatch } from "../../redux/store";
-import { createCriteriaBlocks, getCriteriaBlocks, createOrUpdateFilter, getAudienceCount } from "../../api/apiClient";
+import { createCriteriaBlocks, getCriteriaBlocks, createOrUpdateFilter, getAudienceCount, getAudienceEstimate } from "../../api/apiClient";
 import CriteriaBlockPanel from "./CriteriaBlockPanel";
 import FilterCanvas from "./FilterCanvas";
 import FilterSummary from "./FilterSummary";
-import SaveFilterModal from "./SaveFilterModal";
+import SaveFilterModal from "../Modals/SaveFilterModal";
 import AddCriteriaModal from "./AddCriteriaModal";
 import { DESIGN_SYSTEM } from "design/theme";
 
@@ -232,9 +232,52 @@ const FilterBuilder: React.FC<FilterBuilderProps> = ({
     color: '',
     handleClose: () => { },
   });
+  const estimateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+const triggerAudienceEstimate = (payload:any) => {
+  if (estimateTimeoutRef.current) {
+    clearTimeout(estimateTimeoutRef.current);
+  }
+
+  estimateTimeoutRef.current = setTimeout(async () => {
+    try {
+      const res = await getAudienceEstimate(payload);
+      console.log("//////////////Estimate response:", res);
+      setEstimatedAudience(res ?? 0);
+    } catch (e) {
+      console.error("Estimate failed", e);
+    }
+  }, 600); // sweet spot
+};
+  
   useEffect(() => {
-    getAudienceCount().then(res => setEstimatedAudience(res.data.count));
-  }, []);
+  const groups = groupsByTab[activeTab];
+  if (!groups || groups.length === 0) return;
+
+  const payload = {
+    conditions: groups.map((group, index) => ({
+      groupId: group.groupId || index,
+      groupOperator: groupOperatorsByTab[activeTab]?.[group.id] || "AND",
+      criteria: group.criteria.map((c: any) => ({
+        field: c.key,
+        operator: c.operator,
+        value: c.value,
+      })),
+    })),
+    logicalOperator:
+      groups.length > 1
+        ? logicalOperatorsByTab[activeTab]?.[1] || "OR"
+        : "AND",
+  };
+
+  triggerAudienceEstimate(payload);
+}, [
+  groupsByTab,
+  groupOperatorsByTab,
+  logicalOperatorsByTab,
+  activeTab,
+]);
+
 
   useEffect(() => {
     if (propMode === "edit" && initialData) {

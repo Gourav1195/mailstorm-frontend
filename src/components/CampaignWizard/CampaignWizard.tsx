@@ -32,28 +32,17 @@ import Step1Audience from './Step1Audience';
 import SuccessModal from '../Modals/SuccessModal';
 import { useNavigate } from 'react-router-dom';
 // import useUnsavedChangesWarning from '../../hooks/usePrompt';
-
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/store";
 import { updateCampaign, setSelectedCampaignData } from "../../redux/slices/campaignSlice";
-import DeleteModal from '../Modals/DeleteModal';
+import DeleteModal from '../Modals/AllModal';
 import { DynamicIconProps } from '../../types/modal';
 import CryptoJS from 'crypto-js';
-
+import { useDesignSystem } from '../../design/theme';
 const SpacedBox = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(2),
   marginBottom: theme.spacing(2),
 }));
-// const StyledCard = styled(Card)({
-//   display: "flex",
-//   alignItems: "center",
-//   padding: "16px",
-//   marginBottom: "16px",
-//   "@media (max-width:600px)": {
-//     flexDirection: "column",
-//     alignItems: "flex-start",
-//   },
-// });
 
 const CustomConnector = styled(StepConnector)(({ theme }) => ({
   [`&.${stepConnectorClasses.alternativeLabel}`]: {
@@ -101,13 +90,6 @@ export default function CampaignCreator() {
     audience: null as Types.ObjectId | null,
     template: null as Types.ObjectId | null,
     schedule: null,
-    // {      
-    //   frequency: '',
-    //   time: '09:00',
-    //   startDate:  new Date(new Date().setDate(new Date().getDate() + 1)),
-    //   endDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-    // },
-    // status: "Draft",
     openRate: 0,
     ctr: 0,
     delivered: 0,
@@ -134,7 +116,8 @@ export default function CampaignCreator() {
       delivered: 0,
     }));
   };
-
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const ds = useDesignSystem(mode);
   useEffect(() => {
     if (location.state?.step !== undefined) {
       setActiveStep(location.state.step);
@@ -211,7 +194,6 @@ export default function CampaignCreator() {
   // useEffect(() => {
   //   if (!id) resetState();
   // }, [id]);
-
 
   useEffect(() => {
     if (campaignData.type === "Real Time") {
@@ -438,22 +420,22 @@ if (activeStep < steps.length - 1) {
     }
     switch (adjustedStep) {
       case 0:
-        return <Step0CampaignType handleChange={handleChange} campaignData={campaignData} />;
+        return <Step0CampaignType mode={mode} handleChange={handleChange} campaignData={campaignData} />;
       case 1:
-        return <Step1Audience handleChange={handleChange} campaignData={campaignData} audienceName={audienceName} setAudienceName={setAudienceName} />
+        return <Step1Audience mode={mode} handleChange={handleChange} campaignData={campaignData} audienceName={audienceName} setAudienceName={setAudienceName} />
       case 2:
-        return <Step2Templates handleChange={handleChange} campaignData={campaignData} templateData={templateData} setTemplateData={setTemplateData} />;
+        return <Step2Templates mode={mode} handleChange={handleChange} campaignData={campaignData} templateData={templateData} setTemplateData={setTemplateData} />;
       case 3:
-        return <Step3Schedule handleChange={handleChange} campaignData={campaignData} handleDateChange={handleDateChange} setCampaignData={setCampaignData} />;
+        return <Step3Schedule mode={mode} handleChange={handleChange} campaignData={campaignData} handleDateChange={handleDateChange} setCampaignData={setCampaignData} />;
       case 4:
-        return <Step4Review campaignData={campaignData} audienceName={audienceName} templateData={templateData} />;
+        return <Step4Review mode={mode} campaignData={campaignData} audienceName={audienceName} templateData={templateData} />;
       default:
         return <Typography variant="h6">Unknown Step</Typography>;
     }
   };
 
   return (
-    <Container sx={{ display: 'flex', flexDirection: 'column', flexGrow: 10, py: 4, bgcolor: '#F8F9FE', maxWidth: { xs: '100%', }, }}>
+    <Container sx={{ display: 'flex', flexDirection: 'column', flexGrow: 10, py: 4, bgcolor: ds.colors.surface,color: ds.colors.textPrimary, maxWidth: { xs: '100%', }, }}>
       <Typography sx={{ fontSize: "26px", }} gutterBottom>
         Create a New Campaign
       </Typography>
@@ -476,7 +458,7 @@ if (activeStep < steps.length - 1) {
       />
 
       <Box >
-        <Card>
+        <Card sx={{bgcolor: ds.colors.surfaceElevated,color: ds.colors.textPrimary, }}>
           <CardContent>
             <Stepper
               alternativeLabel
@@ -515,6 +497,7 @@ if (activeStep < steps.length - 1) {
                         />
                       }
                       sx={{
+                        color: ds.colors.textPrimary,
                         flexDirection: 'column',
                         fontSize: { xs: '12px', sm: '15px' },
                         alignItems: 'center',
@@ -533,6 +516,7 @@ if (activeStep < steps.length - 1) {
             </Stepper>
             <Box
               sx={{
+                 color: ds.colors.textPrimary,
                 minwidth: '100%',
                 minHeight: { xs: '300px', md: '400px' },
                 display: 'flex',
@@ -555,7 +539,7 @@ if (activeStep < steps.length - 1) {
                 </Grid>
                 <Grid>
                   <Button onClick={() => setIsDeleteModalopen(true)} color="error" variant="contained" sx={{ mr: 1.5 }}>exit</Button>
-                  <Button sx={{ bgcolor: "#0057D9" }} variant="contained" onClick={handleNextStep}>
+                  <Button sx={{ bgcolor: ds.colors.primary }} variant="contained" onClick={handleNextStep}>
                     {(activeStep === steps.length - 1) ? 'Launch Campaign' : activeStep === 0 ? 'Next' : 'Save & Continue'}
                   </Button>
                   <SuccessModal open={open} onClose={() => setOpen(false)}

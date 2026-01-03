@@ -28,7 +28,8 @@ import {
   Grid2 as Grid,
   Alert,
   Snackbar,
-
+  Avatar,
+  Badge,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import StarIcon from "@mui/icons-material/Star";
@@ -37,6 +38,12 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import GridViewIcon from '@mui/icons-material/GridView';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import AddIcon from '@mui/icons-material/Add';
+import FileCopyIcon from '@mui/icons-material/FileCopy';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import RestoreIcon from '@mui/icons-material/Restore';
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedCampaignData } from '../../redux/slices/campaignSlice';
 import {
@@ -53,16 +60,19 @@ import {
 } from "../../redux/slices/templateSlice";
 import { RootState } from "../../redux/store";
 import { useDebounce } from "use-debounce";
-import DeleteModal from "../Modals/DeleteModal";
+import DeleteModal from "../Modals/AllModal";
 import type { Template } from "../../redux/slices/templateSlice";
 import CustomPreview from "./CustomPreview";
 import { useNavigate } from "react-router-dom";
 import SMSPreview from '../Modals/SMSPreview'
 import EmptyTemplates from "./EmptyTemplates";
 import CryptoJS from "crypto-js";
+import { useDesignSystem } from "../../design/theme";
 
 const TemplatesTable: React.FC = () => {
-
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const designSystem = useDesignSystem(mode);
+  
   const dispatch = useDispatch();
 
   const {
@@ -75,7 +85,6 @@ const TemplatesTable: React.FC = () => {
     selectedTemplate = null,
   } = useSelector((state: RootState) => state.template || {});
 
-  console.log(allTemplates)
   const [isDeleteModalopen, setIsDeleteModalopen] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [editName, setEditName] = useState("");
@@ -91,6 +100,27 @@ const TemplatesTable: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const navigation = useNavigate();
+
+  // Enhanced color mappings for categories
+  const getCategoryColor = (category: string) => {
+    const colorMap: Record<string, { color: string; bg: string; icon?: string }> = {
+      'Promotional': { color: designSystem.colors.success, bg: designSystem.colors.successBg, icon: '🎯' },
+      'Transactional': { color: designSystem.colors.warning, bg: designSystem.colors.warningBg, icon: '💳' },
+      'Event Based': { color: designSystem.colors.primary, bg: designSystem.colors.primaryBg, icon: '🎉' },
+      'Update': { color: designSystem.colors.info, bg: designSystem.colors.infoBg, icon: '🔄' },
+      'Announcement': { color: designSystem.colors.accent, bg: designSystem.colors.accentBg, icon: '📢' },
+      'Action': { color: designSystem.colors.secondary, bg: designSystem.colors.secondaryBg, icon: '⚡' },
+      'Product': { color: designSystem.colors.chart5, bg: `${designSystem.colors.chart5}15`, icon: '📦' },
+      'Holiday': { color: designSystem.colors.chart4, bg: `${designSystem.colors.chart4}15`, icon: '🎄' },
+    };
+    return colorMap[category] || { color: designSystem.colors.textSecondary, bg: designSystem.colors.surfaceElevated, icon: '📄' };
+  };
+
+  // Get template type color
+  const getTypeColor = (type: string) => {
+    return type === 'Email' ? designSystem.colors.primary : designSystem.colors.secondary;
+  };
+
   useEffect(() => {
     dispatch(setFilters({ page: 1 }));
   }, [debouncedSearch, filters.type, filters.category, filters.sortBy, dispatch]);
@@ -111,7 +141,6 @@ const TemplatesTable: React.FC = () => {
 
   const handleAnchorClose = (id: string) => {
     setMenuAnchorEl(({}));
-    // setMenuAnchorEl(prev => ({ ...prev, [id]: null }));
   };
 
   useEffect(() => {
@@ -175,22 +204,14 @@ const TemplatesTable: React.FC = () => {
     dispatch(getTemplateById(templateId) as any);
     if (type === 'Email') {
       setOpenIndex(templateId);
-    }
-    else if (type === 'SMS') {
+    } else if (type === 'SMS') {
       setOpenSMSModal(true);
       setOpenIndex(templateId);
     }
-    else {
-      console.log("Type Doesn't exists");
-    }
-    console.log("view template", templateId);
-
   };
 
   const handleClose = () => {
     setOpenIndex(null);
-    // dispatch(clearSelectedTemplate());
-    // refreshActiveTab();
   };
 
   const handleFilterChange = (e: any) => {
@@ -204,14 +225,12 @@ const TemplatesTable: React.FC = () => {
 
   const handleEditClick = async (id: string, type: string) => {
     await dispatch(getTemplateById(id) as any);
-    // setOpenEditModal(true);
     const secretKey = process.env.REACT_APP_ENCRYPT_SECRET_KEY as string;
     const encryptedId = CryptoJS.AES.encrypt(id, secretKey).toString();
 
     if (type === "Email") {
       navigation(`/build-template/${encodeURIComponent(encryptedId)}`);
-    }
-    else {
+    } else {
       navigation(`/build-sms/${encodeURIComponent(encryptedId)}`);
     }
   };
@@ -243,33 +262,28 @@ const TemplatesTable: React.FC = () => {
     setIsDeleteModalopen(true);
     setMenuAnchorEl(({}));
   };
+
   const handleConfirmDelete = async () => {
     if (selectedId) {
-      // dispatch(deleteTemplate(selectedId) as any);
       await dispatch(deleteTemplate(String(selectedId)) as any);
       setIsDeleteModalopen(false);
       refreshActiveTab();
-      // setShowDeleteAlert(true);
-
-      setSuccessMessage("Template Deleted Successfully");
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setSuccessMessage("Template deleted successfully");
     }
-    setIsDeleteModalopen(false);
   };
 
   const handleRestoreTemplate = async (id: string) => {
     await dispatch(restoreTemplate(id) as any);
     refreshActiveTab();
   };
-  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   const handleDuplicateTemplate = async (id: string) => {
     const res: any = await dispatch(duplicateTemplate(id) as any);
     if (!duplicateTemplate.fulfilled.match(res)) return;
 
     const duplicated: Template = res.payload.template;
-
     let newList: Template[];
 
     if (activeTab === "all") {
@@ -277,13 +291,11 @@ const TemplatesTable: React.FC = () => {
       newList = [...allTemplates];
       newList.splice(idx + 1, 0, duplicated);
       dispatch(setAllTemplates(newList));
-
     } else if (activeTab === "recent") {
       const idx = recentTemplates.findIndex((t) => t._id === id);
       newList = [...recentTemplates];
       newList.splice(idx + 1, 0, duplicated);
       dispatch(setRecentTemplates(newList));
-
     } else {
       const idx = favoriteTemplates.findIndex((t) => t._id === id);
       newList = [...favoriteTemplates];
@@ -294,8 +306,7 @@ const TemplatesTable: React.FC = () => {
     setHighlightedId(duplicated._id);
     setMenuAnchorEl(({}));
     setTimeout(() => setHighlightedId(null), 8000);
-    setSuccessMessage("Template Cloned Successfully");
-    setTimeout(() => setSuccessMessage(null), 3000);
+    setSuccessMessage("Template duplicated successfully");
   };
 
   const templatesToShow =
@@ -311,138 +322,281 @@ const TemplatesTable: React.FC = () => {
   if (filters.search === "" && filters.category === '' && filters.sortBy === '' && allTemplates.length === 0) return <EmptyTemplates />;
 
   return (
-    <Container sx={{ py: 4, bgcolor: '#F8F9FE', maxWidth: { xs: '100%', }, }}>
-      <Typography sx={{ fontSize: "26px", }} gutterBottom>
-        Template Dashboard
-      </Typography>
+    <Container sx={{ 
+      py: 4, 
+      bgcolor: designSystem.colors.background,
+      maxWidth: { xs: '100%', lg: '100%' },
+    }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ 
+          color: designSystem.colors.textPrimary,
+          fontWeight: 600,
+          background: designSystem.colors.gradientPrimary,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+        }}>
+          Template Dashboard
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          sx={{
+            background: designSystem.colors.gradientPrimary,
+            '&:hover': {
+              opacity: 0.9,
+              transform: 'translateY(-1px)',
+            },
+            transition: 'all 0.2s ease',
+          }}
+          onClick={() => navigation('/build-template')}
+        >
+          Create Template
+        </Button>
+      </Box>
+
       <Snackbar
         open={successMessage ? true : false}
         autoHideDuration={3000}
         onClose={() => setSuccessMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity="success" onClose={() => setSuccessMessage(null)} sx={{ width: '100%' }}>
+        <Alert 
+          severity="success" 
+          onClose={() => setSuccessMessage(null)} 
+          sx={{ 
+            width: '100%',
+            backgroundColor: designSystem.colors.successBg,
+            color: designSystem.colors.success,
+            border: `1px solid ${designSystem.colors.successBorder}`,
+            '& .MuiAlert-icon': { color: designSystem.colors.success }
+          }}
+        >
           {successMessage}
         </Alert>
       </Snackbar>
 
-      <Card sx={{ p: 2 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-          <Tab label="All Templates" value={"all"} />
-          <Tab label="Recently Used" value={"recent"} />
-          <Tab label="Favourites" value={"favorite"} />
-        </Tabs>
+      <Card sx={{ 
+        p: 3, 
+        backgroundColor: designSystem.colors.surface,
+        borderRadius: designSystem.effects.borderRadius.lg,
+        boxShadow: designSystem.effects.shadows.default,
+        border: `1px solid ${designSystem.colors.border}`,
+      }}>
+        <Box sx={{ mb: 3 }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange}
+            sx={{
+              '& .MuiTab-root': {
+                fontWeight: 500,
+                color: designSystem.colors.textTertiary,
+                '&.Mui-selected': {
+                  color: designSystem.colors.primary,
+                  fontWeight: 600,
+                },
+              },
+              '& .MuiTabs-indicator': {
+                background: designSystem.colors.gradientPrimary,
+                height: 3,
+                borderRadius: designSystem.effects.borderRadius.full,
+              }
+            }}
+          >
+            <Tab 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>All Templates</span>
+                  <Badge
+                    badgeContent={allTemplates.length}
+                    color="primary"
+                    sx={{
+                      ml:1,
+                      '& .MuiBadge-badge': {
+                        backgroundColor: designSystem.colors.primary,
+                        color: designSystem.colors.textInverse,
+                        fontSize: '0.7rem',
+                        height: 18,
+                        minWidth: 18,
+                      }
+                    }}
+                  />
+                </Box>
+              } 
+              value={"all"} 
+            />
+            <Tab 
+              label="Recently Used" 
+              value={"recent"} 
+            />
+            <Tab 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <StarIcon sx={{ fontSize: 16 }} />
+                  <span>Favorites</span>
+                </Box>
+              } 
+              value={"favorite"} 
+            />
+          </Tabs>
+        </Box>
 
-        <Stack direction="row" spacing={2} alignItems="center" mb={2} sx={{ justifyContent: 'space-between', }}>
-          <Box>
-            <FormControl variant="outlined" size="small" sx={{ minWidth: { xs: 40, md: 225 }, bgcolor: "#F8F9FA", borderRadius: "6px", marginRight: "auto" }}>
-              <InputLabel htmlFor="status-select" sx={{ fontSize: "14px", boxSizing: "border-box", display: "flex", alignItems: "center", }}>
-                <SearchIcon />&nbsp;Search by templates or tags
-              </InputLabel>
-              <InputBase
+        <Stack direction="row" spacing={2} alignItems="center" mb={3} sx={{ justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FormControl variant="outlined" size="small">
+              <TextField
+                placeholder="Search templates or tags..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                name="search"
-                sx={{
-                  fontSize: "14px",
-                  width: "100%",
-                  pt: 0.5,
-                  pb: 0.5,
+                size="small"
+                InputProps={{
+                  startAdornment: (
+                    <SearchIcon sx={{ color: designSystem.colors.textTertiary, mr: 1 }} />
+                  ),
+                  sx: {
+                    backgroundColor: designSystem.colors.surfaceElevated,
+                    borderRadius: designSystem.effects.borderRadius.sm,
+                    width: 280,
+                    '& fieldset': {
+                      borderColor: designSystem.colors.border,
+                    },
+                    '&:hover fieldset': {
+                      borderColor: designSystem.colors.primary,
+                    },
+                  }
                 }}
               />
             </FormControl>
           </Box>
 
-          <Box sx={{ display: 'flex', flexWrap: 'nowrap' }}>
-
-            <Box sx={{ display: 'flex', gap: 0.5, mr: 1, bgcolor: '#F8F9FA', borderRadius: '6px', height: '37px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 0.5, 
+              bgcolor: designSystem.colors.surfaceElevated, 
+              borderRadius: designSystem.effects.borderRadius.sm,
+              p: 0.5,
+              border: `1px solid ${designSystem.colors.border}`,
+            }}>
               <Tooltip title="List View">
                 <IconButton
                   onClick={() => setView('list')}
-                  color={view === 'list' ? 'primary' : 'default'}
+                  sx={{
+                    color: view === 'list' ? designSystem.colors.primary : designSystem.colors.textTertiary,
+                    backgroundColor: view === 'list' ? designSystem.colors.primaryBg : 'transparent',
+                    borderRadius: designSystem.effects.borderRadius.xs,
+                  }}
                 >
                   <ChecklistIcon />
                 </IconButton>
               </Tooltip>
-              <Divider orientation="vertical" flexItem sx={{ height: '30px', width: '0.8px', mt: 0.5, color: '#D6D6D6' }} />
               <Tooltip title="Grid View">
                 <IconButton
                   onClick={() => setView('grid')}
-                  color={view === 'grid' ? 'primary' : 'default'}
+                  sx={{
+                    color: view === 'grid' ? designSystem.colors.primary : designSystem.colors.textTertiary,
+                    backgroundColor: view === 'grid' ? designSystem.colors.primaryBg : 'transparent',
+                    borderRadius: designSystem.effects.borderRadius.xs,
+                  }}
                 >
                   <GridViewIcon />
                 </IconButton>
               </Tooltip>
             </Box>
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 120, bgcolor: "#F8F9FA", borderRadius: "6px", mr: 1 }}>
-              <InputLabel htmlFor="status-select" sx={{ fontSize: "14px" }}>
-                Categories
-              </InputLabel>
+
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 140 }}>
               <Select
                 id="category-select"
                 name="category"
-                label="Category"
-                value={filters.category || ""} onChange={handleFilterChange}
-                sx={{ fontSize: "14px", color: "#6D6976", }}
+                value={filters.category || ""}
+                onChange={handleFilterChange}
+                displayEmpty
+                sx={{
+                  fontSize: '0.875rem',
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  borderRadius: designSystem.effects.borderRadius.sm,
+                  '& .MuiSelect-select': {
+                    color: designSystem.colors.textPrimary,
+                  },
+                  '& fieldset': {
+                    borderColor: designSystem.colors.border,
+                  },
+                }}
+                startAdornment={<FilterListIcon sx={{ color: designSystem.colors.textTertiary, mr: 1 }} />}
               >
-                <MenuItem value="" sx={{ fontSize: "14px", pl: 2, color: "#6D6976", }}>
-                  All
+                <MenuItem value="" sx={{ color: designSystem.colors.textTertiary }}>
+                  All Categories
                 </MenuItem>
-                {[
-                  "Promotional", "Transactional", "Event Based", "Update", "Announcement", "Action", "Product", "Holiday"
-                ].map((c) => (
-                  <MenuItem key={c} value={c} sx={{ color: "#6D6976", fontSize: "14px", }}>
+                {["Promotional", "Transactional", "Event Based", "Update", "Announcement", "Action", "Product", "Holiday"].map((c) => (
+                  <MenuItem key={c} value={c} sx={{ color: designSystem.colors.textPrimary }}>
                     {c}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 80, maxWidth: 100, bgcolor: "#F8F9FA", borderRadius: "6px", mr: 1 }}>
-              <InputLabel htmlFor="status-select" sx={{ fontSize: "14px" }}>
-                Type
-              </InputLabel>
+
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
               <Select
                 id="type-select"
-                label="Type" name="type"
-                value={filters.type || ""} onChange={handleFilterChange}
-                sx={{ fontSize: "14px", color: "#6D6976", }}
+                name="type"
+                value={filters.type || ""}
+                onChange={handleFilterChange}
+                displayEmpty
+                sx={{
+                  fontSize: '0.875rem',
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  borderRadius: designSystem.effects.borderRadius.sm,
+                  '& .MuiSelect-select': {
+                    color: designSystem.colors.textPrimary,
+                  },
+                  '& fieldset': {
+                    borderColor: designSystem.colors.border,
+                  },
+                }}
               >
-                <MenuItem value="" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
-                  All
+                <MenuItem value="" sx={{ color: designSystem.colors.textTertiary }}>
+                  All Types
                 </MenuItem>
-                <MenuItem value="Email" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="Email" sx={{ color: designSystem.colors.textPrimary }}>
                   Email
                 </MenuItem>
-                <MenuItem value="SMS" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="SMS" sx={{ color: designSystem.colors.textPrimary }}>
                   SMS
                 </MenuItem>
               </Select>
             </FormControl>
 
-            <FormControl variant="outlined" size="small" sx={{ minWidth: 90, maxWidth: 100, bgcolor: "#F8F9FA", borderRadius: "6px", }}>
-              <InputLabel htmlFor="status-select" sx={{ fontSize: "14px" }}>
-                Sort by
-              </InputLabel>
+            <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
               <Select
                 id="sortby-select"
                 name="sortBy"
-                label="Sort by"
-                value={filters.sortBy || ""} onChange={handleFilterChange}
-                sx={{ fontSize: "14px", color: "#6D6976", }}
+                value={filters.sortBy || ""}
+                onChange={handleFilterChange}
+                displayEmpty
+                sx={{
+                  fontSize: '0.875rem',
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  borderRadius: designSystem.effects.borderRadius.sm,
+                  '& .MuiSelect-select': {
+                    color: designSystem.colors.textPrimary,
+                  },
+                  '& fieldset': {
+                    borderColor: designSystem.colors.border,
+                  },
+                }}
               >
-                <MenuItem value="" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="" sx={{ color: designSystem.colors.textTertiary }}>
                   Sort by
                 </MenuItem>
-                <MenuItem value="newest" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="newest" sx={{ color: designSystem.colors.textPrimary }}>
                   Newest
                 </MenuItem>
-                <MenuItem value="oldest" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="oldest" sx={{ color: designSystem.colors.textPrimary }}>
                   Oldest
                 </MenuItem>
-                <MenuItem value="nameAsc" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="nameAsc" sx={{ color: designSystem.colors.textPrimary }}>
                   Name (A to Z)
                 </MenuItem>
-                <MenuItem value="nameDesc" sx={{ fontSize: "14px", padding: "2px 4px", color: "#6D6976", }}>
+                <MenuItem value="nameDesc" sx={{ color: designSystem.colors.textPrimary }}>
                   Name (Z to A)
                 </MenuItem>
               </Select>
@@ -451,309 +605,455 @@ const TemplatesTable: React.FC = () => {
         </Stack>
 
         {view === 'list' ? (
-          <Table sx={{ border: '2px solid #ECEEF6', }}>
+          <Table sx={{ 
+            border: `1px solid ${designSystem.colors.border}`,
+            borderRadius: designSystem.effects.borderRadius.sm,
+            overflow: 'hidden',
+          }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#F3F3F3', color: '#A3AABC' }}>
-                <TableCell sx={{ color: '#A3AABC', textAlign: 'center' }}>TEMPLATE</TableCell>
-                <TableCell sx={{ color: '#A3AABC' }}>TYPE</TableCell>
-                <TableCell sx={{ color: '#A3AABC' }}>LAST MODIFIED</TableCell>
-                <TableCell sx={{ color: '#A3AABC' }}>CATEGORY</TableCell>
-                <TableCell sx={{ color: '#A3AABC' }}>TAGS</TableCell>
-                <TableCell sx={{ color: '#A3AABC' }}>ACTIONS</TableCell>
+              <TableRow sx={{ 
+                bgcolor: designSystem.colors.surfaceElevated,
+                '& th': {
+                  borderColor: designSystem.colors.border,
+                  color: designSystem.colors.textSecondary,
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  py: 2,
+                }
+              }}>
+                <TableCell sx={{ width: '30%' }}>TEMPLATE</TableCell>
+                <TableCell>TYPE</TableCell>
+                <TableCell>LAST MODIFIED</TableCell>
+                <TableCell>CATEGORY</TableCell>
+                <TableCell>TAGS</TableCell>
+                <TableCell align="center">ACTIONS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {templatesToShow.map((template: any, i) => (
-                <TableRow key={template._id} sx={{
-                  bgcolor: i % 2 === 0 ? 'white' : '#FAFAFA',
-                  border: i % 2 === 0 ? 'white' : '#ECEEF6',
-                  opacity: Boolean(template.isDeleted) ? 0.4 : 1,
-                  boxShadow: template._id === highlightedId ? 'inset 0px 0px 10px #ff9800' : 'inset 0px 0px 10px #ffffff'
-                }}>
-                  <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={1} >
-                      <IconButton onClick={() => handleFavoriteToggle(template._id)} sx={{ cursor: 'pointer' }}>
-                        {template.favorite ? (
-                          <StarIcon fontSize="small" color="warning" />
-                        ) : (
-                          <StarBorderIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                      <Typography color="primary" fontWeight="medium" sx={{ cursor: "pointer" }}>
-                        {template.name}
+              {templatesToShow.map((template: any, i) => {
+                const categoryColors = getCategoryColor(template.category);
+                const typeColor = getTypeColor(template.type);
+                return (
+                  <TableRow 
+                    key={template._id} 
+                    sx={{
+                      bgcolor: i % 2 === 0 ? designSystem.colors.surface : designSystem.colors.surfaceElevated,
+                      borderColor: designSystem.colors.border,
+                      opacity: Boolean(template.isDeleted) ? 0.6 : 1,
+                      position: 'relative',
+                      '&:hover': {
+                        backgroundColor: designSystem.colors.hoverSecondary,
+                      }
+                    }}
+                  >
+                    <TableCell>
+                      <Stack direction="row" alignItems="center" spacing={1.5}>
+                        <IconButton 
+                          onClick={() => handleFavoriteToggle(template._id)} 
+                          sx={{ 
+                            color: template.favorite ? designSystem.colors.warning : designSystem.colors.textTertiary,
+                            '&:hover': { color: designSystem.colors.warning }
+                          }}
+                        >
+                          {template.favorite ? <StarIcon /> : <StarBorderIcon />}
+                        </IconButton>
+                        <Box>
+                          <Typography 
+                            color="primary" 
+                            fontWeight={600}
+                            sx={{ 
+                              cursor: "pointer",
+                              '&:hover': { color: designSystem.colors.primaryLight }
+                            }}
+                            onClick={() => handleViewTemplate(template._id, template.type)}
+                          >
+                            {template.name}
+                          </Typography>
+                          {template.description && (
+                            <Typography variant="caption" color={designSystem.colors.textTertiary}>
+                              {template.description.substring(0, 50)}...
+                            </Typography>
+                          )}
+                        </Box>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={template.type}
+                        size="small"
+                        sx={{
+                          color: typeColor,
+                          bgcolor: `${typeColor}15`,
+                          fontWeight: 500,
+                          borderRadius: designSystem.effects.borderRadius.sm,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography color={designSystem.colors.textSecondary} variant="body2">
+                        {new Date(template.lastModified)?.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </Typography>
-                    </Stack>
-                  </TableCell>
-                  <TableCell>{template.type}</TableCell>
-                  {/* <TableCell>{template.lastModified?.split('T').join(', ').slice(0,17)}</TableCell> */}
-                  <TableCell>{new Date(template.lastModified)?.toLocaleString('en-US', {
-                    timeZone: 'America/New_York', // or 'UTC' acc to time zone 
-                    hour12: true,
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={template.category}
-                      size="small"
-                      sx={{
-                        color:
-                          template.category === 'Promotional'
-                            ? '#2B8A3E'
-                            : template.category === 'Transactional'
-                              ? '#FD7E14'
-                              : template.category === 'Event Based'
-                                ? '#0057D9'
-                                : template.category === 'Announcement'
-                                  ? '#F83738'
-                                  : template.category === 'Action'
-                                    ? '#0057D9'
-                                    : template.category === 'Product'
-                                      ? '#c0b000'
-                                      : template.category === 'Update'
-                                        ? '#04dcd1'
-                                        : template.category === 'New'
-                                          ? '#a7690b'
-                                          : '#52B141',
-                        bgcolor:
-                          template.category === 'Promotional'
-                            ? '#DFFFE5'
-                            : template.category === 'Transactional'
-                              ? '#FFECDD'
-                              : template.category === 'Event Based'
-                                ? '#E0ECFF'
-                                : template.category === 'Announcement'
-                                  ? '#F8DDDD'
-                                  : template.category === 'Action'
-                                    ? '#E2ECFC'
-                                    : template.category === 'Product'
-                                      ? '#f9f7e2'
-                                      : template.category === 'Update'
-                                        ? '#e2f6f9'
-                                        : template.category === 'New'
-                                          ? '#f8e3c5'
-                                          : '#E6F5E3',
-                        fontWeight: 500,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {template.tags?.join(", ") || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', }}>
-                      <IconButton onClick={() => handleViewTemplate(template._id, template.type)}>
-                        <VisibilityIcon color="primary" fontSize="small" />
-                      </IconButton>
-                      <Typography sx={{ color: "#0057D9", cursor: 'pointer' }} onClick={() => handleViewTemplate(template._id, template.type)}>View</Typography>
-
-                      <IconButton onClick={(e) => handleAnchorClick(e, template._id)}>
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
-                      <Menu
-                        anchorEl={menuAnchorEl[template._id]}
-                        open={Boolean(menuAnchorEl[template._id])}
-                        onClose={handleAnchorClose}
-                        anchorOrigin={{
-                          vertical: "bottom",
-                          horizontal: "center",
+                      <Typography variant="caption" color={designSystem.colors.textTertiary}>
+                        {new Date(template.lastModified)?.toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <span>{categoryColors.icon}</span>
+                            <span>{template.category}</span>
+                          </Box>
+                        }
+                        size="small"
+                        sx={{
+                          color: categoryColors.color,
+                          bgcolor: categoryColors.bg,
+                          fontWeight: 500,
+                          borderRadius: designSystem.effects.borderRadius.sm,
+                          border: `1px solid ${categoryColors.color}20`,
                         }}
-                        transformOrigin={{
-                          vertical: "top",
-                          horizontal: "center",
-                        }}
-                      >
-                        {!template.isDeleted && (
-                          <>
-                            <MenuItem onClick={() => handleEditClick(template._id, template.type)}>Edit</MenuItem>
-                            <MenuItem onClick={() => handleDuplicateTemplate(template._id)}>Duplicate</MenuItem>
-                          </>
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {template.tags?.slice(0, 2).map((tag: string, idx: number) => (
+                          <Chip
+                            key={idx}
+                            label={tag}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              color: designSystem.colors.textSecondary,
+                              borderColor: designSystem.colors.borderLight,
+                              fontSize: '0.75rem',
+                            }}
+                          />
+                        ))}
+                        {template.tags?.length > 2 && (
+                          <Typography variant="caption" color={designSystem.colors.textTertiary}>
+                            +{template.tags.length - 2} more
+                          </Typography>
                         )}
-
-                        {template.isDeleted ? (
-                          <MenuItem color="success" onClick={() => handleRestoreTemplate(template._id)}>Restore</MenuItem>
-                        ) : (
-                          <MenuItem color="error" onClick={() => handleDeleteTemplate(template._id)}>Delete</MenuItem>
-                        )}
-                      </Menu>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'center' }}>
+                        <Tooltip title="Preview">
+                          <IconButton 
+                            onClick={() => handleViewTemplate(template._id, template.type)}
+                            sx={{
+                              color: designSystem.colors.textTertiary,
+                              '&:hover': {
+                                color: designSystem.colors.primary,
+                                backgroundColor: designSystem.colors.primaryBg,
+                              }
+                            }}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        
+                        <IconButton 
+                          onClick={(e) => handleAnchorClick(e, template._id)}
+                          sx={{
+                            color: designSystem.colors.textTertiary,
+                            '&:hover': {
+                              color: designSystem.colors.primary,
+                              backgroundColor: designSystem.colors.primaryBg,
+                            }
+                          }}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                        
+                        <Menu
+                          anchorEl={menuAnchorEl[template._id]}
+                          open={Boolean(menuAnchorEl[template._id])}
+                          onClose={() => handleAnchorClose(template._id)}
+                          PaperProps={{
+                            sx: {
+                              backgroundColor: designSystem.colors.surface,
+                              border: `1px solid ${designSystem.colors.border}`,
+                              boxShadow: designSystem.effects.shadows.md,
+                              borderRadius: designSystem.effects.borderRadius.sm,
+                              mt: 1,
+                            }
+                          }}
+                        >
+                          {!template.isDeleted && (
+                            <>
+                              <MenuItem 
+                                onClick={() => handleEditClick(template._id, template.type)}
+                                sx={{
+                                  color: designSystem.colors.textPrimary,
+                                  '&:hover': { backgroundColor: designSystem.colors.hover },
+                                }}
+                              >
+                                <EditIcon fontSize="small" sx={{ mr: 1.5 }} />
+                                Edit
+                              </MenuItem>
+                              <MenuItem 
+                                onClick={() => handleDuplicateTemplate(template._id)}
+                                sx={{
+                                  color: designSystem.colors.textPrimary,
+                                  '&:hover': { backgroundColor: designSystem.colors.hover },
+                                }}
+                              >
+                                <FileCopyIcon fontSize="small" sx={{ mr: 1.5 }} />
+                                Duplicate
+                              </MenuItem>
+                            </>
+                          )}
+                          {template.isDeleted ? (
+                            <MenuItem 
+                              onClick={() => handleRestoreTemplate(template._id)}
+                              sx={{
+                                color: designSystem.colors.success,
+                                '&:hover': { backgroundColor: designSystem.colors.successBg },
+                              }}
+                            >
+                              <RestoreIcon fontSize="small" sx={{ mr: 1.5 }} />
+                              Restore
+                            </MenuItem>
+                          ) : (
+                            <MenuItem 
+                              onClick={() => handleDeleteTemplate(template._id)}
+                              sx={{
+                                color: designSystem.colors.error,
+                                '&:hover': { backgroundColor: designSystem.colors.errorBg },
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />
+                              Delete
+                            </MenuItem>
+                          )}
+                        </Menu>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         ) : (
-          <Grid container sx={{ display: 'flex', justifyContent: 'center', gap: 2.5 }}>
-            {templatesToShow.map((template: any, i: number) => (
-              <Grid size={{ xs: 5.5 }}  >
-                <Card
-                  key={template._id}
-                  sx={{
-                    borderRadius: 2,
-                    p: 2,
-                    minWidth: 300,
-                    position: 'relative',
-                    opacity: Boolean(template.isDeleted) ? 0.4 : 1,
-                    boxShadow: template._id === highlightedId ? 'inset 0px 0px 10px #ff9800' : '0px 4px 12px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <IconButton onClick={() => handleFavoriteToggle(template._id)} sx={{ cursor: 'pointer', p: 0.5 }}>
-                        {template.favorite ? (
-                          <StarIcon fontSize="small" color="warning" />
-                        ) : (
-                          <StarBorderIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {template.name}
-                      </Typography>
-                    </Stack>
-                    <Chip
-                      label={template.category}
-                      size="small"
-                      sx={{
-                        color:
-                          template.category === 'Promotional'
-                            ? '#2B8A3E'
-                            : template.category === 'Transactional'
-                              ? '#FD7E14'
-                              : template.category === 'Event Based'
-                                ? '#0057D9'
-                                : template.category === 'Announcement'
-                                  ? '#F83738'
-                                  : template.category === 'Action'
-                                    ? '#0057D9'
-                                    : template.category === 'Product'
-                                      ? '#c0b000'
-                                      : template.category === 'Update'
-                                        ? '#04dcd1'
-                                        : template.category === 'New'
-                                          ? '#a7690b'
-                                          : '#52B141',
-                        bgcolor:
-                          template.category === 'Promotional'
-                            ? '#DFFFE5'
-                            : template.category === 'Transactional'
-                              ? '#FFECDD'
-                              : template.category === 'Event Based'
-                                ? '#E0ECFF'
-                                : template.category === 'Announcement'
-                                  ? '#F8DDDD'
-                                  : template.category === 'Action'
-                                    ? '#E2ECFC'
-                                    : template.category === 'Product'
-                                      ? '#f9f7e2'
-                                      : template.category === 'Update'
-                                        ? '#e2f6f9'
-                                        : template.category === 'New'
-                                          ? '#f8e3c5'
-                                          : '#E6F5E3',
-                        fontWeight: 500
-                      }}
-                    />
-                  </Stack>
-
-                  <Typography variant="body2" color="text.secondary" mt={1}>
-                    <span style={{ color: '#999' }}>Type:</span> {template.type}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary" mt={1}>
-                    <span style={{ color: '#999' }}>Tags:</span> {template.tags?.join(', ') ?? '-'}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary" mt={0.5}>
-                    <span style={{ color: '#999' }}>Last Modified:</span> {new Date(template.lastModified)?.toLocaleString('en-US', {
-                      timeZone: 'America/New_York',
-                      hour12: true,
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Typography>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Tooltip title="View">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 0.1, cursor: 'pointer' }}
-                        onClick={() => handleViewTemplate(template._id, template.type)}
-                      >
-                        <VisibilityIcon fontSize="small" sx={{ color: '#007BFF' }} />
-                        <Typography variant="body2" color="#007BFF" fontWeight={500}>
-                          View
+          <Grid container spacing={2.5}>
+            {templatesToShow.map((template: any, i: number) => {
+              const categoryColors = getCategoryColor(template.category);
+              const typeColor = getTypeColor(template.type);
+              return (
+                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={template._id}>
+                  <Card
+                    sx={{
+                      borderRadius: designSystem.effects.borderRadius.lg,
+                      p: 2.5,
+                      height: '100%',
+                      backgroundColor: designSystem.colors.surface,
+                      border: `1px solid ${designSystem.colors.border}`,
+                      boxShadow: designSystem.effects.shadows.xs,
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&:hover': {
+                        boxShadow: designSystem.effects.shadows.md,
+                        transform: 'translateY(-2px)',
+                        borderColor: designSystem.colors.primary,
+                      },
+                      '&::before': template._id === highlightedId ? {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 3,
+                        background: designSystem.colors.gradientPrimary,
+                      } : {},
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <IconButton 
+                          onClick={() => handleFavoriteToggle(template._id)} 
+                          sx={{ 
+                            p: 0.5,
+                            color: template.favorite ? designSystem.colors.warning : designSystem.colors.textTertiary,
+                            '&:hover': { color: designSystem.colors.warning }
+                          }}
+                        >
+                          {template.favorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                        </IconButton>
+                        <Typography variant="subtitle1" fontWeight={600} sx={{ color: designSystem.colors.textPrimary }}>
+                          {template.name}
                         </Typography>
-
                       </Box>
-                    </Tooltip>
-                    <IconButton onClick={(e) => handleAnchorClick(e, template._id)}>
-                      <MoreVertIcon />
-                    </IconButton>
-                    <Menu
-                      anchorEl={menuAnchorEl[template._id]}
-                      open={Boolean(menuAnchorEl[template._id])}
-                      onClose={() => handleAnchorClose(template._id)}
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "center",
-                      }}
-                      transformOrigin={{
-                        vertical: "top",
-                        horizontal: "center",
-                      }}
-                    >
-                      {!template.isDeleted && (
-                        <>
-                          <MenuItem onClick={() => handleEditClick(template._id, template.type)}>Edit</MenuItem>
-                          <MenuItem onClick={() => handleDuplicateTemplate(template._id)}>Duplicate</MenuItem>
-                        </>
-                      )}
-                      {template.isDeleted ? (
-                        <MenuItem color="success" onClick={() => handleRestoreTemplate(template._id)}>Restore</MenuItem>
-                      ) : (
-                        <MenuItem color="error" onClick={() => handleDeleteTemplate(template._id)}>Delete</MenuItem>
-                      )}
-                    </Menu>
-                  </Stack>
-                </Card>
-              </Grid>
-            ))}
+                      <Chip
+                        label={template.category}
+                        size="small"
+                        sx={{
+                          color: categoryColors.color,
+                          bgcolor: categoryColors.bg,
+                          fontWeight: 500,
+                          borderRadius: designSystem.effects.borderRadius.sm,
+                          border: `1px solid ${categoryColors.color}20`,
+                        }}
+                      />
+                    </Box>
+
+                    {template.description && (
+                      <Typography variant="body2" color={designSystem.colors.textSecondary} mb={2}>
+                        {template.description.length > 80 ? `${template.description.substring(0, 80)}...` : template.description}
+                      </Typography>
+                    )}
+
+                    <Box sx={{ mb: 2 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Chip
+                          label={template.type}
+                          size="small"
+                          sx={{
+                            color: typeColor,
+                            bgcolor: `${typeColor}15`,
+                            fontWeight: 500,
+                            borderRadius: designSystem.effects.borderRadius.sm,
+                          }}
+                        />
+                        <Typography variant="caption" color={designSystem.colors.textTertiary}>
+                          {new Date(template.lastModified)?.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </Typography>
+                      </Stack>
+                    </Box>
+
+                    <Box sx={{ mb: 2.5 }}>
+                      <Typography variant="caption" color={designSystem.colors.textTertiary} sx={{ display: 'block', mb: 0.5 }}>
+                        Tags:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {template.tags?.slice(0, 3).map((tag: string, idx: number) => (
+                          <Chip
+                            key={idx}
+                            label={tag}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              color: designSystem.colors.textSecondary,
+                              borderColor: designSystem.colors.borderLight,
+                              fontSize: '0.7rem',
+                              height: 20,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+
+                    <Divider sx={{ borderColor: designSystem.colors.border, my: 1.5 }} />
+
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Button
+                        size="small"
+                        startIcon={<VisibilityIcon />}
+                        onClick={() => handleViewTemplate(template._id, template.type)}
+                        sx={{
+                          color: designSystem.colors.primary,
+                          '&:hover': {
+                            backgroundColor: designSystem.colors.primaryBg,
+                          }
+                        }}
+                      >
+                        Preview
+                      </Button>
+                      
+                      <IconButton 
+                        onClick={(e) => handleAnchorClick(e, template._id)}
+                        size="small"
+                        sx={{
+                          color: designSystem.colors.textTertiary,
+                          '&:hover': {
+                            color: designSystem.colors.primary,
+                            backgroundColor: designSystem.colors.primaryBg,
+                          }
+                        }}
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Card>
+                </Grid>
+              );
+            })}
           </Grid>
         )}
 
-        <Box mt={3}>
-          <Button onClick={() => handlePageChange("prev")} disabled={filters.page === 1}>
-            Previous
-          </Button>
-          <span style={{ margin: "0 10px" }}>
-            Page {filters.page} of {activeTab === "favorite" ? totalLocalFavorites : totalPages}
-          </span>
-          <Button
-            onClick={() => handlePageChange("next")}
-            disabled={
-              filters.page >= (activeTab === "favorite" ? totalLocalFavorites : totalPages ?? 1)
-            }
-          >
-            Next
-          </Button>
-        </Box>
+        {templatesToShow.length > 0 && (
+          <Box mt={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => handlePageChange("prev")}
+              disabled={filters.page === 1}
+              sx={{
+                borderColor: designSystem.colors.border,
+                color: designSystem.colors.textPrimary,
+                '&:hover': {
+                  borderColor: designSystem.colors.primary,
+                  backgroundColor: designSystem.colors.primaryBg,
+                },
+                '&.Mui-disabled': {
+                  borderColor: designSystem.colors.borderLight,
+                  color: designSystem.colors.textDisabled,
+                }
+              }}
+            >
+              Previous
+            </Button>
+            
+            <Typography variant="body2" sx={{ color: designSystem.colors.textSecondary }}>
+              Page <Box component="span" sx={{ color: designSystem.colors.textPrimary, fontWeight: 600 }}>{filters.page}</Box> of <Box component="span" sx={{ color: designSystem.colors.textPrimary, fontWeight: 600 }}>
+                {activeTab === "favorite" ? totalLocalFavorites : totalPages}
+              </Box>
+            </Typography>
+            
+            <Button
+              variant="outlined"
+              onClick={() => handlePageChange("next")}
+              disabled={filters.page >= (activeTab === "favorite" ? totalLocalFavorites : totalPages ?? 1)}
+              sx={{
+                borderColor: designSystem.colors.border,
+                color: designSystem.colors.textPrimary,
+                '&:hover': {
+                  borderColor: designSystem.colors.primary,
+                  backgroundColor: designSystem.colors.primaryBg,
+                },
+                '&.Mui-disabled': {
+                  borderColor: designSystem.colors.borderLight,
+                  color: designSystem.colors.textDisabled,
+                }
+              }}
+            >
+              Next
+            </Button>
+          </Box>
+        )}
       </Card>
 
       {selectedTemplate && selectedTemplate._id === openIndex && (
-        <CustomPreview key={selectedTemplate.id}
+        <CustomPreview 
+          key={selectedTemplate.id}
           doc={selectedTemplate.content}
           html={selectedTemplate.html}
           open={true}
           handleClose={handleClose}
         />
       )}
+      
       {selectedTemplate && selectedTemplate._id === openIndex && (
         <SMSPreview
           open={openSMSModal}
@@ -767,35 +1067,97 @@ const TemplatesTable: React.FC = () => {
       )}
 
       <Modal open={openEditModal} onClose={handleCloseEditModal}>
-        <Box sx={{ p: 4, bgcolor: "background.paper", m: "auto", mt: 8, width: 500, borderRadius: 2 }}>
+        <Box sx={{ 
+          p: 4, 
+          backgroundColor: designSystem.colors.surface,
+          m: "auto", 
+          mt: 8, 
+          width: 500, 
+          borderRadius: designSystem.effects.borderRadius.lg,
+          border: `1px solid ${designSystem.colors.border}`,
+          boxShadow: designSystem.effects.shadows.xl,
+        }}>
           {selectedTemplate ? (
             <>
-              <Typography variant="h6" gutterBottom>Edit Template</Typography>
+              <Typography variant="h6" gutterBottom sx={{ color: designSystem.colors.textPrimary }}>
+                Edit Template
+              </Typography>
+              <Divider sx={{ borderColor: designSystem.colors.border, mb: 3 }} />
               <TextField
                 fullWidth
                 label="Name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 sx={{ mb: 2 }}
+                InputLabelProps={{
+                  sx: { color: designSystem.colors.textTertiary }
+                }}
+                InputProps={{
+                  sx: {
+                    color: designSystem.colors.textPrimary,
+                    '& fieldset': {
+                      borderColor: designSystem.colors.border,
+                    },
+                  }
+                }}
               />
               <TextareaAutosize
                 minRows={10}
-                style={{ width: "100%", padding: 10, fontFamily: "inherit", fontSize: 14 }}
+                style={{ 
+                  width: "100%", 
+                  padding: 12, 
+                  fontFamily: "inherit", 
+                  fontSize: 14,
+                  backgroundColor: designSystem.colors.surfaceElevated,
+                  color: designSystem.colors.textPrimary,
+                  border: `1px solid ${designSystem.colors.border}`,
+                  borderRadius: designSystem.effects.borderRadius.sm,
+                }}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
               />
-              <Box mt={2} display="flex" justifyContent="flex-end">
-                <Button onClick={handleCloseEditModal} sx={{ mr: 1 }}>Cancel</Button>
-                <Button variant="contained" onClick={handleSaveEdit}>Save</Button>
+              <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                <Button 
+                  onClick={handleCloseEditModal}
+                  sx={{ 
+                    color: designSystem.colors.textSecondary,
+                    '&:hover': {
+                      backgroundColor: designSystem.colors.hoverSecondary,
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="contained" 
+                  onClick={handleSaveEdit}
+                  sx={{
+                    background: designSystem.colors.gradientPrimary,
+                    '&:hover': {
+                      opacity: 0.9,
+                    }
+                  }}
+                >
+                  Save Changes
+                </Button>
               </Box>
             </>
           ) : (
-            <Typography>Loading template...</Typography>
+            <Typography sx={{ color: designSystem.colors.textPrimary }}>
+              Loading template...
+            </Typography>
           )}
         </Box>
       </Modal>
 
-      <DeleteModal open={isDeleteModalopen} handleClose={() => setIsDeleteModalopen(false)} handleConfirm={handleConfirmDelete} title='Delete This Template' message='Are you sure you want to delete this template?' />
+      <DeleteModal 
+        open={isDeleteModalopen} 
+        handleClose={() => setIsDeleteModalopen(false)} 
+        handleConfirm={handleConfirmDelete} 
+        title='Delete Template'
+        message='Are you sure you want to delete this template? This action cannot be undone.'
+        mode={mode}
+      />
     </Container>
   );
 };

@@ -28,10 +28,11 @@ interface ScheduleFormProps {
     type: "startDate" | "endDate",
     context: { validationError: any }
   ) => void;
+  mode: 'light' | 'dark';
   setCampaignData:React.Dispatch<React.SetStateAction<CampaignData>>;
 }
 
-const ScheduleForm: React.FC<ScheduleFormProps> = ({ handleChange, campaignData, handleDateChange, setCampaignData }) => {
+const ScheduleForm: React.FC<ScheduleFormProps> = ({ mode, handleChange, campaignData, handleDateChange, setCampaignData }) => {
   const selectedCampaign = useSelector((state: RootState) => state.campaign.selectedCampaign);
 
   useEffect(() => {

@@ -109,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   );
 
   return (
-    <DashboardContainer mode={mode}>
+    <DashboardContainer mode={mode} sx={{ padding: isMobile ? ds.spacing.md : ds.spacing.lg }}>
       {/* Header Section with Theme Toggle */}
       <SectionHeader mode={mode}>
         <Box>
@@ -260,55 +260,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
         <Grid size={{ xs: 12, md: 8 }}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
-              <Box 
-                sx={{ 
-                  backgroundColor: ds.colors.surface,
-                  borderRadius: ds.effects.borderRadius.md,
-                  border: `1px solid ${ds.colors.border}`,
-                  padding: 3,
-                  height: '100%',
-                  boxShadow: ds.effects.shadows.default,
-                }}
-              >
-                <Typography 
-                  sx={{ 
-                    fontSize: ds.typography.scale.h4.fontSize,
-                    fontWeight: ds.typography.scale.h4.fontWeight,
-                    color: ds.colors.textPrimary,
-                    mb: 3,
-                    lineHeight: ds.typography.scale.h4.lineHeight,
-                  }}
-                >
-                  Email Performance
-                </Typography>
-                <EmailSent data={data?.emailsSent?.monthlyStats} />
-              </Box>
+              <EmailSent data={data?.emailsSent?.monthlyStats} />            
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <Box 
-                sx={{ 
-                  backgroundColor: ds.colors.surface,
-                  borderRadius: ds.effects.borderRadius.md,
-                  border: `1px solid ${ds.colors.border}`,
-                  padding: 3,
-                  height: '100%',
-                  boxShadow: ds.effects.shadows.default,
-                }}
-              >
-                <Typography 
-                  sx={{ 
-                    fontSize: ds.typography.scale.h4.fontSize,
-                    fontWeight: ds.typography.scale.h4.fontWeight,
-                    color: ds.colors.textPrimary,
-                    mb: 3,
-                    lineHeight: ds.typography.scale.h4.lineHeight,
-                  }}
-                >
-                  Campaign Engagement
-                </Typography>
                 <CampaignPerformanceChart stats={data?.emailsSent?.monthlyStats} />
-              </Box>
-            </Grid>
+           </Grid>
           </Grid>
         </Grid>
 

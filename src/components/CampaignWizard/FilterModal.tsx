@@ -12,6 +12,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 
 interface FilterModalProps {
+  mode: 'light' | 'dark';
   open: boolean;
   onClose: () => void;
   name: string;
@@ -22,7 +23,7 @@ interface FilterModalProps {
   summary: [string] | string | null;
 }
 
-const FilterModal: React.FC<FilterModalProps> = ({ open, onClose, name, description, tags, createdOn, audience, summary,
+const FilterModal: React.FC<FilterModalProps> = ({ mode, open, onClose, name, description, tags, createdOn, audience, summary,
 }) => {
   return (
     <Dialog

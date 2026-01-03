@@ -1,74 +1,120 @@
 import React from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
-  Button,
   Box,
+  Card,
+  Typography,
   IconButton,
+  FormControl,
+  InputLabel,
+  InputBase,
+  Button,
+  Alert,
 } from "@mui/material";
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from "@mui/icons-material/Close";
 
-interface FilterModalProps {
+interface SaveFilterModalProps {
+  mode: 'light' | 'dark';
   open: boolean;
+  saveFilterName: string;
+  saveDescription: string;
+  saveTags: string;
+  validationError: { filter: string[] };
   onClose: () => void;
-  name: string;
-  description: string;
-  tags: string;
-  createdOn: string;
-  audience: number;
-  summary: [string] | string | null;
+  onSave: () => void;
+  onFilterNameChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
+  onTagsChange: (value: string) => void;
 }
 
-const SaveFilterModal: React.FC<FilterModalProps> = ({
-  open, onClose,
+const SaveFilterModal: React.FC<SaveFilterModalProps> = ({
+  mode,
+  open,
+  saveFilterName,
+  saveDescription,
+  saveTags,
+  validationError,
+  onClose,
+  onSave,
+  onFilterNameChange,
+  onDescriptionChange,
+  onTagsChange,
 }) => {
   return (
-    <Dialog
-      open={open}
-      fullWidth
-      maxWidth="sm"
-      aria-labelledby="filter-modal-title"
-      sx={{
-        borderRadius: "10px",
-        "& .MuiPaper-root": {
-          // width: '100%',
-          // height: '100%',
-        },
-        "& .MuiDialog-paper": { width: "80vw", maxWidth: "none", height: "80vh", maxHeight: "none" },
-      }}
-    >
-      {/* Modal Header */}
+    <Dialog open={open} onClose={onClose}>
       <Box sx={{ bgcolor: '#0057D9', width: '100%', height: 35, display: 'flex', justifyContent: 'space-between' }}>
         <Typography sx={{ color: "white", ml: 2, mt: 0.5 }}>Save Filter</Typography>
         <IconButton onClick={onClose}>
           <CloseIcon sx={{ color: "white" }} />
         </IconButton>
       </Box>
-      
-      <DialogTitle id="filter-modal-title" sx={{ fontSize: '24px', fontWeight: 'semi-bold' }}>
-        Filter Details
-      </DialogTitle>
+      <Card sx={{ width: 400, p: 2, mx: "auto", outline: "none" }}>
+        {validationError.filter.length > 0 && (
+          <Alert variant='outlined' severity="warning" sx={{ mb: 1 }}>
+            {validationError.filter[0]}
+          </Alert>
+        )}
 
-      <DialogContent>
-        <Typography variant="h6" sx={{ mt: 3, mb: 1, fontSize: '24px', fontWeight: 'semi-bold' }}>
-          Filter Summary
-        </Typography>
-        <Box sx={{ mb: 2, bgcolor: "#DAE9FF", p: 0.5, fontSize: '14px' }}>
-          <Typography sx={{ color: "#0057D9", }}>
-            "The audience will include "
-          </Typography>
+        <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1 }}>
+          <InputLabel sx={{ display: 'flex' }}>
+            Filter Name<Typography color="red">*</Typography>
+          </InputLabel>
+          <InputBase
+            value={saveFilterName}
+            onChange={(e) => onFilterNameChange(e.target.value)}
+            sx={{ width: "100%", pt: 0.5 }}
+            required
+            fullWidth
+          />
+        </FormControl>
+
+        <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1, mt: 2 }}>
+          <InputLabel sx={{ display: 'flex' }}>
+            Description<Typography color="red">*</Typography>
+          </InputLabel>
+          <InputBase
+            value={saveDescription}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            sx={{ fontSize: "14px", width: "100%", pt: 0.5, mt: 2 }}
+            required
+            fullWidth
+            multiline
+            minRows={5}
+          />
+        </FormControl>
+
+        <FormControl variant="outlined" size="medium" sx={{ minWidth: { xs: '100%' }, bgcolor: "#F8F9FA", borderRadius: "6px", p: 1, mt: 2 }}>
+          <InputLabel sx={{ display: 'flex' }}>
+            Tags (comma separated)
+          </InputLabel>
+          <InputBase
+            value={saveTags}
+            onChange={(e) => onTagsChange(e.target.value)}
+            sx={{ width: "100%", pt: 0.5 }}
+            fullWidth
+          />
+        </FormControl>
+
+        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="secondary"
+            sx={{ width: "48%" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onSave}
+            variant="contained"
+            color="primary"
+            sx={{ width: "48%", bgcolor: '#0057D9' }}
+            disabled={!saveFilterName || !saveDescription}
+          >
+            Save
+          </Button>
         </Box>
-      </DialogContent>
-
-      {/* Modal Footer/Actions */}
-      <DialogActions>
-        <Button onClick={onClose} variant="contained" color="primary">
-          Close
-        </Button>
-      </DialogActions>
+      </Card>
     </Dialog>
   );
 };

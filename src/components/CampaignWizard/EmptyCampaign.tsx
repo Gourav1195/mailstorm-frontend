@@ -6,11 +6,17 @@ import {
   Card,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import { useDesignSystem } from 'design/theme';
+import { useSelector } from 'react-redux';
+import { RootState } from "../../redux/store";
 
 const EmptyCampaign = () => {
   const navigation = useNavigate();
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const ds = useDesignSystem(mode);
+  
   return (
-    <Container sx={{ py: 4, bgcolor: '#F8F9FE', maxWidth: '80vw', }}>
+    <Container sx={{ py: 4,  bgcolor: ds.colors.surface,color: ds.colors.textPrimary, maxWidth: '80vw', }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Typography sx={{ fontSize: "26px", }} gutterBottom>
           Manage Campaign
